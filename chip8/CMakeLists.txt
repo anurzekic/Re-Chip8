@@ -20,14 +20,12 @@ endif()
 
 target_include_directories(
     chip8 
-    
     PUBLIC 
     "${CMAKE_CURRENT_SOURCE_DIR}/include"
 )
 
 target_link_libraries(
     chip8 
-    
     PRIVATE 
     SDL3::SDL3
 )
