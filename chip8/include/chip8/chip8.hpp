@@ -5,11 +5,13 @@
 
 #include <array>
 #include <cstdint>
+#include <filesystem>
+#include <fstream>
 #include <SDL3/SDL.h>
 
 class Chip8 {
 public:
-    Chip8();
+    Chip8(const std::filesystem::path& rom_path);
     ~Chip8() = default; 
     Chip8(const Chip8&) = default;
 
@@ -49,4 +51,8 @@ private:
     };
 
     draw_color draw_color;
+
+    std::ifstream rom;
+
+    void showRamContent() const;
 };  

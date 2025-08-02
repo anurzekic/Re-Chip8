@@ -6,7 +6,9 @@
 #include <thread>
 #include <type_traits>
 
-Chip8::Chip8() {
+Chip8::Chip8(const std::filesystem::path& rom_path) : 
+    rom(rom_path, std::ios::in|std::ios::binary|std::ios::ate) 
+{
     draw_color.r = 120;
     draw_color.g = 140;
     draw_color.b = 90;
@@ -41,16 +43,40 @@ void Chip8::init() {
         0xF0, 0x80, 0xF0, 0x80, 0x80  // F
     };
     memcpy(RAM.data(), font.data(), sizeof(font));
+
+    if (rom.is_open()) {
+        std::streampos size = rom.tellg();
+        rom.seekg(0, std::ios::beg);
+        rom.read(reinterpret_cast<char*>(RAM.data() + 0x200), size);
+        rom.close();
+
+        std::cout << "Read file into memory" << std::endl;
+    } else {
+        std::cout << "Unable to read in file" << std::endl;
+    }
+    showRamContent();
+}
+
+void Chip8::showRamContent() const {
+    for (size_t i = 0; i < RAM.size(); ++i) {
+        std::cout << std::hex << std::uppercase
+                << std::setw(2) << std::setfill('0')
+                << static_cast<int>(RAM[i]) << ' ';
+
+        // Print 32 bytes per line
+        if ((i + 1) % 32 == 0) std::cout << '\n';
+    }
 }
 
 void Chip8::run() {
     init();
 
-    bool game_is_still_running = true;
-    size_t insturctions_per_frame = INSTRUCTION_PER_SECOND / FPS; 
+    bool is_running = true;
+    bool is_paused = false;
+    size_t instructions_per_frame = INSTRUCTION_PER_SECOND / FPS; 
     
     auto t_start = std::chrono::high_resolution_clock::now();
-    while (game_is_still_running) 
+    while (is_running) 
     {
         SDL_Event event;        
         while (SDL_PollEvent(&event)) 
@@ -65,14 +91,18 @@ void Chip8::run() {
                 SDL_Log("Wow, you just pressed the %s key!", SDL_GetKeyName(event.key.key));
                 if (event.key.key == SDLK_ESCAPE) 
                 {
-                    game_is_still_running = false;
+                    is_running = false;
+                } 
+                else if (event.key.key == SDLK_SPACE) 
+                {
+                    is_paused ^= 1;
                 }
             }
         }
 
-        for (size_t i = 0; i <  insturctions_per_frame; i++)
+        for (size_t i = 0; i <  instructions_per_frame; i++)
         {
-            
+            // Fetch and execute instructions
         }
         
         fps_cap_timer.sleep();
