@@ -2,7 +2,9 @@ add_library(
     chip8 
     
     src/chip8.cpp 
+
     include/chip8/chip8.hpp
+    include/chip8/timer.hpp
 )
 
 # Create an option to switch between a system sdl library and a vendored SDL library
