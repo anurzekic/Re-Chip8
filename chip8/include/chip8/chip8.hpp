@@ -4,6 +4,7 @@
 #include "chip8/defines.h"
 
 #include <array>
+#include <stack>
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
@@ -33,10 +34,8 @@ private:
 
     // Program counter
     uint16_t PC;
-    // Stack pointer
-    uint8_t SP;
 
-    std::array<uint16_t, 16> stack;
+    std::stack<uint16_t> stack;
 
     std::array<bool, 16> keypad;
 
@@ -46,25 +45,28 @@ private:
 
     Timer<FPS> fps_cap_timer;
 
-    struct draw_color {
+    struct color {
         uint8_t r;
         uint8_t g;
         uint8_t b;
         uint8_t a;
     };
 
-    draw_color draw_color;
-
+    color background_color;
+    color draw_color;
+    bool draw_to_screen = false;
+    
     std::ifstream rom;
 
     void clearWindow();
+    void renderDisplay();
 
     std::string get_memory_region_label(std::size_t address) const;
     void showRamContent() const;
     
     void executeInstruction(uint16_t instruction);
-
     // Standard Chip-8 Instructions
+    void instr_set_0(uint16_t instruction);
     void instr_00E0();
     void instr_00EE(); 
 
@@ -80,6 +82,7 @@ private:
     void instr_6xkk(uint8_t x, uint8_t kk);
     void instr_7xkk(uint8_t x, uint8_t kk);
 
+    void instr_set_8(uint16_t instruction, uint8_t x, uint8_t y);
     void instr_8xy0(uint8_t x, uint8_t y);
     void instr_8xy1(uint8_t x, uint8_t y);
     void instr_8xy2(uint8_t x, uint8_t y);
@@ -100,9 +103,11 @@ private:
 
     void instr_Dxyn(uint8_t x, uint8_t y, uint8_t n);
 
+    void instr_set_E(uint16_t instruction, uint8_t x);
     void instr_Ex9E(uint8_t x);
     void instr_ExA1(uint8_t x);
 
+    void instr_set_F(uint16_t instruction, uint8_t x);
     void instr_Fx07(uint8_t x);
     void instr_Fx0A(uint8_t x);
     void instr_Fx15(uint8_t x);

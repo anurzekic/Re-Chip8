@@ -8,11 +8,16 @@
 #include <random>
 
 Chip8::Chip8(const std::filesystem::path& rom_path) : 
-    rom(rom_path, std::ios::in|std::ios::binary|std::ios::ate), PC(0x200), SP(0), display{}, RAM{}, keypad{}, stack{}
+    rom(rom_path, std::ios::in|std::ios::binary|std::ios::ate), PC(0x200), display{}, RAM{}, keypad{}
 {
-    draw_color.r = 120;
-    draw_color.g = 140;
-    draw_color.b = 90;
+    background_color.r = 120;
+    background_color.g = 140;
+    background_color.b = 90;
+    background_color.a = 100;
+
+    draw_color.r = 255;
+    draw_color.g = 255;
+    draw_color.b = 255;
     draw_color.a = 100;
 }
 
@@ -23,7 +28,7 @@ Chip8::~Chip8() {
 }
 
 void Chip8::clearWindow() {
-    SDL_SetRenderDrawColor(renderer, draw_color.r, draw_color.g, draw_color.b, draw_color.a);
+    SDL_SetRenderDrawColor(renderer, background_color.r, background_color.g, background_color.b, background_color.a);
     SDL_RenderClear(renderer);
 }
 
@@ -110,6 +115,28 @@ void Chip8::showRamContent() const {
     }
 }
 
+void Chip8::renderDisplay() {
+    SDL_SetRenderDrawColor(renderer, background_color.r, background_color.g, background_color.b, background_color.a);
+    SDL_RenderClear(renderer);
+
+    SDL_SetRenderDrawColor(renderer, draw_color.r, draw_color.g, draw_color.b, draw_color.a);
+
+    for (int y = 0; y < WINDOW_HEIGHT; ++y) {
+        for (int x = 0; x < WINDOW_WIDTH; ++x) {
+            if (display[y][x]) {
+                SDL_FRect pixel{
+                    static_cast<float>(x) * SCALE,
+                    static_cast<float>(y) * SCALE,
+                    SCALE, SCALE
+                };
+                SDL_RenderFillRect(renderer, &pixel);
+            }
+        }
+    }
+    SDL_RenderPresent(renderer);
+}
+
+
 void Chip8::run() {
     init();
 
@@ -122,7 +149,6 @@ void Chip8::run() {
         SDL_Event event;        
         while (SDL_PollEvent(&event)) 
         {  
-            SDL_RenderPresent(renderer);
 
             // poll until all events are handled!
             // decide what to do with this event.
@@ -141,18 +167,20 @@ void Chip8::run() {
             }
         }
 
-        for (size_t i = 0; i <  instructions_per_frame; i++)
-        {
-            // Fetch and execute instructions
-            uint16_t instruction = RAM[PC] << 8 | RAM[PC + 1];
-            PC += 2;
-            executeInstruction(instruction);
-        }
-        
-        fps_cap_timer.sleep();
-        // SDL_RenderClear(renderer);
-    // update game state, draw the current frame
-    
+        if (!is_paused) {
+            for (size_t i = 0; i < instructions_per_frame; i++)
+            {
+                // Fetch and execute instructions
+                uint16_t instruction = RAM[PC] << 8 | RAM[PC + 1];
+                PC += 2;
+                executeInstruction(instruction);
+            }
+            
+            if (draw_to_screen)
+                renderDisplay();        
+            
+            fps_cap_timer.sleep();  
+        }  
     }
 }
 
@@ -164,21 +192,13 @@ void Chip8::executeInstruction(uint16_t instruction) {
     uint8_t kk = instruction & 0x00FF;
     uint8_t x = (instruction & 0x0F00) >> 8;
     uint8_t y = (instruction & 0x00F0) >> 4;
-
+    
+    std::cout << "Executing instruction: " << std::hex << instruction << std::endl;
+    
     switch (first_nibble)
     {
     case 0x0:
-        switch (instruction)
-        {
-        case 0x00E0:
-            instr_00E0();
-            break;
-        case 0x00EE:
-            instr_00EE();
-            break;
-        default:
-            break;
-        }
+        instr_set_0(instruction);
         break;
     case 0x1:
         instr_1nnn(nnn);
@@ -202,39 +222,7 @@ void Chip8::executeInstruction(uint16_t instruction) {
         instr_7xkk(x, kk);
         break;
     case 0x8:
-        uint8_t last_nibble = instruction & 0x000F;
-        switch (last_nibble)
-        {
-        case 0x0:
-            instr_8xy0(x, y);
-            break;
-        case 0x1:
-            instr_8xy1(x, y);
-            break;
-        case 0x2:
-            instr_8xy2(x, y);
-            break;
-        case 0x3:
-            instr_8xy3(x, y);
-            break;
-        case 0x4:
-            instr_8xy4(x, y);
-            break;
-        case 0x5:
-            instr_8xy5(x, y);
-            break;
-        case 0x6:
-            instr_8xy6(x, y);
-            break;
-        case 0x7:
-            instr_8xy7(x, y);
-            break;
-        case 0xE:
-            instr_8xyE(x, y);
-            break;
-        default:
-            break;
-        } 
+        instr_set_8(instruction, x, y);
         break;
     case 0x9:
         instr_9xy0(x, y);
@@ -252,53 +240,10 @@ void Chip8::executeInstruction(uint16_t instruction) {
         instr_Dxyn(x, y, n);
         break;
     case 0xE:
-        uint8_t last_two_nibbles = instruction & 0xFF;
-        switch (last_two_nibbles)
-        {
-        case 0x9E:
-            instr_Ex9E(x);
-            break;
-        case 0xA1:
-            instr_ExA1(x);
-            break;
-        default:
-            break;
-        }
+        instr_set_E(instruction, x);
         break;
     case 0xF:
-        uint8_t last_two_nibbles = instruction & 0xFF;
-        switch (last_two_nibbles)
-        {
-        case 0x07:
-            instr_Fx07(x);
-            break;
-        case 0x0A:
-            instr_Fx0A(x);
-            break;
-        case 0x15:
-            instr_Fx15(x);
-            break;
-        case 0x18:
-            instr_Fx18(x);
-            break;
-        case 0x1E:
-            instr_Fx1E(x);
-            break;
-        case 0x29:
-            instr_Fx29(x);
-            break;
-        case 0x33:
-            instr_Fx33(x);
-            break;
-        case 0x55:
-            instr_Fx55(x);
-            break;
-        case 0x65:
-            instr_Fx65(x);
-            break;
-        default:
-            break;
-        }
+        instr_set_F(instruction, x);
         break;
     default:
         std::cout << "Invalid instruction" << std::endl;
@@ -306,14 +251,116 @@ void Chip8::executeInstruction(uint16_t instruction) {
     }
 }
 
+void Chip8::instr_set_0(uint16_t instruction) {
+    switch (instruction)
+    {
+    case 0x00E0:
+        instr_00E0();
+        break;
+    case 0x00EE:
+        instr_00EE();
+        break;
+    default:
+        break;
+    }
+}
+
+void Chip8::instr_set_8(uint16_t instruction, uint8_t x, uint8_t y) {
+    uint8_t last_nibble = instruction & 0x000F;
+    switch (last_nibble)
+    {
+    case 0x0:
+        instr_8xy0(x, y);
+        break;
+    case 0x1:
+        instr_8xy1(x, y);
+        break;
+    case 0x2:
+        instr_8xy2(x, y);
+        break;
+    case 0x3:
+        instr_8xy3(x, y);
+        break;
+    case 0x4:
+        instr_8xy4(x, y);
+        break;
+    case 0x5:
+        instr_8xy5(x, y);
+        break;
+    case 0x6:
+        instr_8xy6(x, y);
+        break;
+    case 0x7:
+        instr_8xy7(x, y);
+        break;
+    case 0xE:
+        instr_8xyE(x, y);
+        break;
+    default:
+        break;
+    } 
+}
+
+void Chip8::instr_set_E(uint16_t instruction, uint8_t x) {
+    uint8_t last_two_nibbles = instruction & 0xFF;
+    switch (last_two_nibbles)
+    {
+    case 0x9E:
+        instr_Ex9E(x);
+        break;
+    case 0xA1:
+        instr_ExA1(x);
+        break;
+    default:
+        break;
+    }
+}
+
+void Chip8::instr_set_F(uint16_t instruction, uint8_t x) {
+    uint8_t last_two_nibbles = instruction & 0xFF;
+    switch (last_two_nibbles)
+    {
+    case 0x07:
+        instr_Fx07(x);
+        break;
+    case 0x0A:
+        instr_Fx0A(x);
+        break;
+    case 0x15:
+        instr_Fx15(x);
+        break;
+    case 0x18:
+        instr_Fx18(x);
+        break;
+    case 0x1E:
+        instr_Fx1E(x);
+        break;
+    case 0x29:
+        instr_Fx29(x);
+        break;
+    case 0x33:
+        instr_Fx33(x);
+        break;
+    case 0x55:
+        instr_Fx55(x);
+        break;
+    case 0x65:
+        instr_Fx65(x);
+        break;
+    default:
+        break;
+    }
+}
+
+
 void Chip8::instr_00E0() {
     std::fill(display.begin(), display.end(), std::array<bool, WINDOW_WIDTH>{});
     clearWindow();
 }
 
 void Chip8::instr_00EE() {
-    PC = SP;
-    SP -= 1;
+    PC = stack.top();
+    stack.pop();
 } 
 
 void Chip8::instr_0nnn(uint16_t nnn) {
@@ -325,8 +372,7 @@ void Chip8::instr_1nnn(uint16_t nnn) {
 }
 
 void Chip8::instr_2nnn(uint16_t nnn) {
-    SP++;
-    stack[0] = PC; // TODO This is wrong
+    stack.push(PC);
     PC = nnn;
 }
 
@@ -346,7 +392,7 @@ void Chip8::instr_5xy0(uint8_t x, uint8_t y) {
 }
 
 void Chip8::instr_6xkk(uint8_t x, uint8_t kk) {
-    V[x] == kk;
+    V[x] = kk;
 }
 
 void Chip8::instr_7xkk(uint8_t x, uint8_t kk) {
@@ -417,10 +463,36 @@ void Chip8::instr_Cxkk(uint8_t x, uint8_t kk) {
 } 
 
 void Chip8::instr_Dxyn(uint8_t x, uint8_t y, uint8_t n) {
-    // SDL_SetRenderDrawColor
-    // SDL_RenderFillRect
+    uint8_t start_x = V[x] % 64;
+    uint8_t start_y = V[y] % 32;
     
-}
+    V[0xF] = 0;
+
+    for (uint8_t i = 0; i < n; i++)
+    {   
+        if (start_y + i >= 32) break;
+        
+        uint8_t sprite_byte = RAM[I + i];
+
+        for (uint8_t j = 0; j < 8; j++)
+        {
+            if (start_x + j >= 64) break;
+
+            uint8_t bit = (sprite_byte >> (7 - j)) & 1;
+
+            if (bit) {
+                if (display[start_y + i][start_x + j]) {
+                    V[0xF] = 1;
+                    display[start_y + i][start_x + j] = 0;
+                } else {
+                    display[start_y + i][start_x + j] = 1;
+                }
+            }
+        }      
+    }
+
+    draw_to_screen = true;
+}    
 
 void Chip8::instr_Ex9E(uint8_t x) {
 
