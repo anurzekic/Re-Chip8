@@ -8,7 +8,7 @@
 #include <random>
 
 Chip8::Chip8(const std::filesystem::path& rom_path) : 
-    rom(rom_path, std::ios::in|std::ios::binary|std::ios::ate), PC(0x200), display{}, RAM{}, keypad{}
+    rom(rom_path, std::ios::in|std::ios::binary|std::ios::ate), PC(0x200), delay_timer(0), sound_timer(0), display{}, RAM{}, keypad{}
 {
     background_color.r = 120;
     background_color.g = 140;
@@ -178,9 +178,15 @@ void Chip8::run() {
             
             if (draw_to_screen)
                 renderDisplay();        
-            
-            fps_cap_timer.sleep();  
-        }  
+        }
+
+        if (delay_timer > 0)
+            delay_timer--;
+
+        if (sound_timer > 0)
+            sound_timer--;
+        
+        fps_cap_timer.sleep();  
     }
 }
 
@@ -193,7 +199,7 @@ void Chip8::executeInstruction(uint16_t instruction) {
     uint8_t x = (instruction & 0x0F00) >> 8;
     uint8_t y = (instruction & 0x00F0) >> 4;
     
-    std::cout << "Executing instruction: " << std::hex << instruction << std::endl;
+    // std::cout << "Executing instruction: " << std::hex << instruction << std::endl;
     
     switch (first_nibble)
     {
@@ -503,7 +509,7 @@ void Chip8::instr_ExA1(uint8_t x) {
 }
 
 void Chip8::instr_Fx07(uint8_t x) {
-
+    V[x] = delay_timer;
 }
 
 void Chip8::instr_Fx0A(uint8_t x) {
@@ -511,19 +517,19 @@ void Chip8::instr_Fx0A(uint8_t x) {
 }
 
 void Chip8::instr_Fx15(uint8_t x) {
-
+    delay_timer = V[x];
 }
 
 void Chip8::instr_Fx18(uint8_t x) {
-
+    sound_timer = V[x];
 }
 
 void Chip8::instr_Fx1E(uint8_t x) {
-
+    I += V[x];
 }
 
 void Chip8::instr_Fx29(uint8_t x) {
-
+    I = V[x] * 5;
 }
 
 void Chip8::instr_Fx33(uint8_t x) {
@@ -531,9 +537,13 @@ void Chip8::instr_Fx33(uint8_t x) {
 }
 
 void Chip8::instr_Fx55(uint8_t x) {
-
+    for (uint8_t i = 0; i < x; i++) {
+        RAM[I + i] = V[i];
+    }
 }
 
 void Chip8::instr_Fx65(uint8_t x) {
-
+    for (uint8_t i = 0; i < x; i++) {
+        V[i] = RAM[I + i];
+    } 
 }
