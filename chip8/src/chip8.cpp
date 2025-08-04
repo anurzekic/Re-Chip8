@@ -501,11 +501,15 @@ void Chip8::instr_Dxyn(uint8_t x, uint8_t y, uint8_t n) {
 }    
 
 void Chip8::instr_Ex9E(uint8_t x) {
-
+    if (keypad[V[x]]) {
+        PC += 2;
+    }
 }
 
 void Chip8::instr_ExA1(uint8_t x) {
-
+    if (!keypad[V[x]]) {
+        PC += 2;
+    }
 }
 
 void Chip8::instr_Fx07(uint8_t x) {
@@ -513,7 +517,13 @@ void Chip8::instr_Fx07(uint8_t x) {
 }
 
 void Chip8::instr_Fx0A(uint8_t x) {
-
+    for (uint8_t i = 0; i < size(keypad); i++) {
+        if (keypad[i]) {
+            V[x] = i;
+            return;
+        }
+    }
+    PC -=2;
 }
 
 void Chip8::instr_Fx15(uint8_t x) {
@@ -533,17 +543,19 @@ void Chip8::instr_Fx29(uint8_t x) {
 }
 
 void Chip8::instr_Fx33(uint8_t x) {
-
+    RAM[I] = V[x] / 100;
+    RAM[I + 1] = (V[x] / 10) % 10;
+    RAM[I + 2] = V[x] % 10;
 }
 
 void Chip8::instr_Fx55(uint8_t x) {
-    for (uint8_t i = 0; i < x; i++) {
+    for (uint8_t i = 0; i <= x; i++) {
         RAM[I + i] = V[i];
     }
 }
 
 void Chip8::instr_Fx65(uint8_t x) {
-    for (uint8_t i = 0; i < x; i++) {
+    for (uint8_t i = 0; i <= x; i++) {
         V[i] = RAM[I + i];
     } 
 }
