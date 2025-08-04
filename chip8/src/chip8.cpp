@@ -19,6 +19,13 @@ Chip8::Chip8(const std::filesystem::path& rom_path) :
     draw_color.g = 255;
     draw_color.b = 255;
     draw_color.a = 100;
+
+    key_bindings = {
+        {SDL_SCANCODE_1, 0x1}, {SDL_SCANCODE_2, 0x2}, {SDL_SCANCODE_3, 0x3}, {SDL_SCANCODE_4, 0xC},
+        {SDL_SCANCODE_Q, 0x4}, {SDL_SCANCODE_W, 0x5}, {SDL_SCANCODE_E, 0x6}, {SDL_SCANCODE_R, 0xD},
+        {SDL_SCANCODE_A, 0x7}, {SDL_SCANCODE_S, 0x8}, {SDL_SCANCODE_D, 0x9}, {SDL_SCANCODE_F, 0xE},
+        {SDL_SCANCODE_Z, 0xA}, {SDL_SCANCODE_X, 0x0}, {SDL_SCANCODE_C, 0xB}, {SDL_SCANCODE_V, 0xF}
+    };
 }
 
 Chip8::~Chip8() {
@@ -136,12 +143,30 @@ void Chip8::renderDisplay() {
     SDL_RenderPresent(renderer);
 }
 
+void Chip8::handleInput(const SDL_Scancode& key, const Uint32& event_type) {
+    /* user has pressed a key? */
+    if (event_type == SDL_EVENT_KEY_DOWN) {
+        // SDL_Log("Wow, you just pressed the %s key!", SDL_GetScancodeName(key));
+        if (key == SDL_SCANCODE_ESCAPE) {
+            is_running = false;
+        } else if (key == SDL_SCANCODE_SPACE) {
+            is_paused ^= 1;
+        } else if (key_bindings.find(key) != key_bindings.end()) {
+            keypad[key_bindings[key]] = 1;
+        }
+    }
+    if (event_type == SDL_EVENT_KEY_UP) {
+        if (key_bindings.find(key) != key_bindings.end())
+            keypad[key_bindings[key]] = 0;
+    }
+}
+
 
 void Chip8::run() {
     init();
 
-    bool is_running = true;
-    bool is_paused = false;
+    is_running = true;
+    is_paused = false;
     size_t instructions_per_frame = INSTRUCTION_PER_SECOND / FPS; 
     
     while (is_running) 
@@ -149,22 +174,10 @@ void Chip8::run() {
         SDL_Event event;        
         while (SDL_PollEvent(&event)) 
         {  
-
             // poll until all events are handled!
             // decide what to do with this event.
-            /* user has pressed a key? */
-            if (event.type == SDL_EVENT_KEY_DOWN) 
-            {
-                SDL_Log("Wow, you just pressed the %s key!", SDL_GetKeyName(event.key.key));
-                if (event.key.key == SDLK_ESCAPE) 
-                {
-                    is_running = false;
-                } 
-                else if (event.key.key == SDLK_SPACE) 
-                {
-                    is_paused ^= 1;
-                }
-            }
+
+            handleInput(event.key.scancode, event.type);
         }
 
         if (!is_paused) {
@@ -423,28 +436,32 @@ void Chip8::instr_8xy3(uint8_t x, uint8_t y) {
 
 void Chip8::instr_8xy4(uint8_t x, uint8_t y) {
     uint16_t result = V[x] + V[y];
-    V[0xF] = result > 0xFF;
     V[x] = result & 0x00FF;
+    V[0xF] = result > 0xFF;
 }
 
 void Chip8::instr_8xy5(uint8_t x, uint8_t y) {
-    V[0xF] = V[x] > V[y];
+    uint8_t bit = V[x] >= V[y]; 
     V[x] -= V[y];
+    V[0xF] = bit;
 }
 
 void Chip8::instr_8xy6(uint8_t x, uint8_t y) {
-    V[0xF] = V[x] & 0x1;
+    uint8_t bit = V[x] & 0x1;
     V[x] >>= 1;
+    V[0xF] = bit;
 }
 
 void Chip8::instr_8xy7(uint8_t x, uint8_t y) {
-    V[0xF] = V[y] > V[x];
+    uint8_t bit = V[y] >= V[x];
     V[x] = V[y] - V[x];
+    V[0xF] = bit;
 }
 
 void Chip8::instr_8xyE(uint8_t x, uint8_t y) {
-    V[0xF] = (V[x] >> 4) & 0x8;
+    uint8_t bit = (V[x] & 0x80) >> 7;
     V[x] <<= 1;
+    V[0xF] = bit;
 }
 
 void Chip8::instr_9xy0(uint8_t x, uint8_t y) {

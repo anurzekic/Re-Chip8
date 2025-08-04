@@ -9,6 +9,7 @@
 #include <filesystem>
 #include <fstream>
 #include <SDL3/SDL.h>
+#include <map>
 
 class Chip8 {
 public:
@@ -38,6 +39,7 @@ private:
     std::stack<uint16_t> stack;
 
     std::array<bool, 16> keypad;
+    std::map<SDL_Scancode, uint8_t> key_bindings;
 
     display_t display;
     SDL_Window *window;
@@ -58,11 +60,16 @@ private:
     
     std::ifstream rom;
 
+    bool is_running;
+    bool is_paused;
+
     void clearWindow();
     void renderDisplay();
 
     std::string get_memory_region_label(std::size_t address) const;
     void showRamContent() const;
+
+    void handleInput(const SDL_Scancode& key, const Uint32& event_type);
     
     void executeInstruction(uint16_t instruction);
     // Standard Chip-8 Instructions
