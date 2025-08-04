@@ -567,12 +567,19 @@ void Chip8::instr_Fx33(uint8_t x) {
 
 void Chip8::instr_Fx55(uint8_t x) {
     for (uint8_t i = 0; i <= x; i++) {
+        if (I + i >= RAM.size()) {
+            return;
+        }
         RAM[I + i] = V[i];
     }
 }
 
 void Chip8::instr_Fx65(uint8_t x) {
     for (uint8_t i = 0; i <= x; i++) {
+        if (I + i >= RAM.size()) {
+            return;
+        }
+
         V[i] = RAM[I + i];
-    } 
+    }
 }
