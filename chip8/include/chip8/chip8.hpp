@@ -39,6 +39,7 @@ private:
     std::stack<uint16_t> stack;
 
     std::array<bool, 16> keypad;
+    bool waiting_for_key_release;
     std::map<SDL_Scancode, uint8_t> key_bindings;
 
     display_t display;

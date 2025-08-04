@@ -8,7 +8,7 @@
 #include <random>
 
 Chip8::Chip8(const std::filesystem::path& rom_path) : 
-    rom(rom_path, std::ios::in|std::ios::binary|std::ios::ate), PC(0x200), delay_timer(0), sound_timer(0), display{}, RAM{}, keypad{}
+    rom(rom_path, std::ios::in|std::ios::binary|std::ios::ate), PC(0x200), delay_timer(0), sound_timer(0), display{}, RAM{}, keypad{},  waiting_for_key_release(false)
 {
     background_color.r = 120;
     background_color.g = 140;
@@ -494,7 +494,12 @@ void Chip8::instr_Dxyn(uint8_t x, uint8_t y, uint8_t n) {
     for (uint8_t i = 0; i < n; i++)
     {   
         if (start_y + i >= 32) break;
-        
+
+        if (I + i >= RAM.size()) {
+            SDL_Log("Dxyn: RAM read out of bounds at I + %u (0x%03X)", i, I + i);
+            break;
+        }
+
         uint8_t sprite_byte = RAM[I + i];
 
         for (uint8_t j = 0; j < 8; j++)
@@ -518,13 +523,13 @@ void Chip8::instr_Dxyn(uint8_t x, uint8_t y, uint8_t n) {
 }    
 
 void Chip8::instr_Ex9E(uint8_t x) {
-    if (keypad[V[x]]) {
+    if (keypad[V[x] & 0xF]) {
         PC += 2;
     }
 }
 
 void Chip8::instr_ExA1(uint8_t x) {
-    if (!keypad[V[x]]) {
+    if (!keypad[V[x] & 0xF]) {
         PC += 2;
     }
 }
@@ -534,13 +539,32 @@ void Chip8::instr_Fx07(uint8_t x) {
 }
 
 void Chip8::instr_Fx0A(uint8_t x) {
-    for (uint8_t i = 0; i < size(keypad); i++) {
-        if (keypad[i]) {
-            V[x] = i;
-            return;
+    if (!waiting_for_key_release) {
+        for (uint8_t i = 0; i < 16; i++) {
+            if (keypad[i & 0xF]) {
+                V[x] = i;
+                waiting_for_key_release = true;
+                PC -= 2;
+                return;
+            }
+        }
+        PC -= 2;  // No key pressed, repeat instruction
+    } else {
+        // Check if all keys are released
+        bool all_released = true;
+        for (uint8_t i = 0; i < 16; i++) {
+            if (keypad[i & 0xF]) {
+                all_released = false;
+                break;
+            }
+        }
+
+        if (all_released) {
+            waiting_for_key_release = false;
+        } else {
+            PC -= 2;  // Still waiting for release, repeat instruction
         }
     }
-    PC -=2;
 }
 
 void Chip8::instr_Fx15(uint8_t x) {
@@ -560,6 +584,11 @@ void Chip8::instr_Fx29(uint8_t x) {
 }
 
 void Chip8::instr_Fx33(uint8_t x) {
+    if (I + 2 >= RAM.size()) {
+        SDL_Log("Fx33: Memory write would exceed RAM bounds! (I = 0x%03X)", I);
+        return;
+    }
+
     RAM[I] = V[x] / 100;
     RAM[I + 1] = (V[x] / 10) % 10;
     RAM[I + 2] = V[x] % 10;
