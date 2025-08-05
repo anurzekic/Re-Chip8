@@ -16,7 +16,7 @@ A simple CHIP-8 emulator written in [your programming language]. This project ai
     ```
 2. Build and run the emulator:
     ```bash
-    cd CHIP-8-Emulator
+    cd Re-Chip8
     mkdir Build
     cd Build
     cmake ..
