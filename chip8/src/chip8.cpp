@@ -8,7 +8,8 @@
 #include <random>
 
 Chip8::Chip8(const std::filesystem::path& rom_path) : 
-    rom(rom_path, std::ios::in|std::ios::binary|std::ios::ate), PC(0x200), delay_timer(0), sound_timer(0), display{}, RAM{}, keypad{},  waiting_for_key_release(false)
+    rom(rom_path, std::ios::in|std::ios::binary|std::ios::ate), PC(0x200), delay_timer(0), sound_timer(0), 
+    display{}, RAM{}, keypad{},  waiting_for_key_release(false), stream(NULL) 
 {
     background_color.r = 120;
     background_color.g = 140;
@@ -75,6 +76,8 @@ void Chip8::init() {
         std::cout << "Unable to read in file" << std::endl;
     }
     showRamContent();
+
+    configureSound();
 }
 
 std::string Chip8::get_memory_region_label(std::size_t address) const {
@@ -144,23 +147,62 @@ void Chip8::renderDisplay() {
 }
 
 void Chip8::handleInput(const SDL_Scancode& key, const Uint32& event_type) {
-    /* user has pressed a key? */
     if (event_type == SDL_EVENT_KEY_DOWN) {
-        // SDL_Log("Wow, you just pressed the %s key!", SDL_GetScancodeName(key));
-        if (key == SDL_SCANCODE_ESCAPE) {
+        if (key == SDL_SCANCODE_ESCAPE)
             is_running = false;
-        } else if (key == SDL_SCANCODE_SPACE) {
+        else if (key == SDL_SCANCODE_SPACE)
             is_paused ^= 1;
-        } else if (key_bindings.find(key) != key_bindings.end()) {
+        else if (key_bindings.find(key) != key_bindings.end())
             keypad[key_bindings[key]] = 1;
-        }
-    }
-    if (event_type == SDL_EVENT_KEY_UP) {
-        if (key_bindings.find(key) != key_bindings.end())
-            keypad[key_bindings[key]] = 0;
+    } else if (event_type == SDL_EVENT_KEY_UP) {
+            if (key_bindings.find(key) != key_bindings.end())
+                keypad[key_bindings[key]] = 0;
     }
 }
 
+int Chip8::current_sine_sample = 0;
+void SDLCALL Chip8::FeedTheAudioStreamMore(void *userdata, SDL_AudioStream *astream, int additional_amount, int total_amount)
+{
+    additional_amount /= sizeof (float);
+    while (additional_amount > 0) {
+        float samples[128];
+        const int total = SDL_min(additional_amount, SDL_arraysize(samples));
+        int i;
+
+        for (i = 0; i < total; i++) {
+            const int freq = 440;
+            const float phase = current_sine_sample * freq / 8000.0f;
+            samples[i] = SDL_sinf(phase * 2 * SDL_PI_F);
+            current_sine_sample++;
+        }
+
+        current_sine_sample %= 8000;
+
+        SDL_PutAudioStreamData(astream, samples, total * sizeof (float));
+        additional_amount -= total;
+    }
+}
+
+void Chip8::configureSound() {
+    SDL_Init(SDL_INIT_AUDIO);
+    SDL_AudioSpec spec;
+    spec.channels = 1;
+    spec.format = SDL_AUDIO_F32;
+    spec.freq = 8000;
+    
+    stream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec, FeedTheAudioStreamMore, NULL);
+    if (!stream) {
+        SDL_Log("Couldn't create audio stream: %s", SDL_GetError());
+    }
+}
+
+void Chip8::playSound() {
+    SDL_ResumeAudioStreamDevice(stream);
+}
+
+void Chip8::stopSound() {
+    SDL_PauseAudioStreamDevice(stream);
+}
 
 void Chip8::run() {
     init();
@@ -169,20 +211,15 @@ void Chip8::run() {
     is_paused = false;
     size_t instructions_per_frame = INSTRUCTION_PER_SECOND / FPS; 
     
-    while (is_running) 
-    {
+    while (is_running) {
+        
         SDL_Event event;        
-        while (SDL_PollEvent(&event)) 
-        {  
-            // poll until all events are handled!
-            // decide what to do with this event.
-
+        while (SDL_PollEvent(&event)) {  
             handleInput(event.key.scancode, event.type);
         }
 
         if (!is_paused) {
-            for (size_t i = 0; i < instructions_per_frame; i++)
-            {
+            for (size_t i = 0; i < instructions_per_frame; i++) {
                 // Fetch and execute instructions
                 uint16_t instruction = RAM[PC] << 8 | RAM[PC + 1];
                 PC += 2;
@@ -196,8 +233,12 @@ void Chip8::run() {
         if (delay_timer > 0)
             delay_timer--;
 
-        if (sound_timer > 0)
+        if (sound_timer > 0) {
             sound_timer--;
+            playSound();
+        } else {
+            stopSound();
+        }
         
         fps_cap_timer.sleep();  
     }
@@ -548,9 +589,8 @@ void Chip8::instr_Fx0A(uint8_t x) {
                 return;
             }
         }
-        PC -= 2;  // No key pressed, repeat instruction
+        PC -= 2;
     } else {
-        // Check if all keys are released
         bool all_released = true;
         for (uint8_t i = 0; i < 16; i++) {
             if (keypad[i & 0xF]) {
@@ -562,7 +602,7 @@ void Chip8::instr_Fx0A(uint8_t x) {
         if (all_released) {
             waiting_for_key_release = false;
         } else {
-            PC -= 2;  // Still waiting for release, repeat instruction
+            PC -= 2;
         }
     }
 }

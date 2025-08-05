@@ -71,7 +71,15 @@ private:
     void showRamContent() const;
 
     void handleInput(const SDL_Scancode& key, const Uint32& event_type);
-    
+
+    static void SDLCALL FeedTheAudioStreamMore(void *userdata, SDL_AudioStream *astream, int additional_amount, int total_amount);
+
+    void configureSound();
+    void playSound();
+    void stopSound();
+    static int current_sine_sample;
+    SDL_AudioStream *stream;
+
     void executeInstruction(uint16_t instruction);
     // Standard Chip-8 Instructions
     void instr_set_0(uint16_t instruction);
