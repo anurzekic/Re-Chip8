@@ -12,7 +12,7 @@ A simple CHIP-8 emulator written in [your programming language]. This project ai
 
 1. Clone the repository:
     ```bash
-    git clone https://github.com/yourusername/CHIP-8-Emulator.git
+    git clone https://github.com/yourusername/Re-Chip8.git
     ```
 2. Build and run the emulator:
     ```bash
