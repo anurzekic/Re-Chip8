@@ -30,9 +30,7 @@ Chip8::Chip8(const std::filesystem::path& rom_path) :
 }
 
 Chip8::~Chip8() {
-    SDL_DestroyRenderer(renderer);
-    SDL_DestroyWindow(window);
-    SDL_PumpEvents();
+    clean();
 }
 
 void Chip8::clearWindow() {
@@ -41,6 +39,9 @@ void Chip8::clearWindow() {
 }
 
 void Chip8::init() {
+    // TODO Handle return values
+    SDL_InitSubSystem(SDL_INIT_VIDEO | SDL_INIT_AUDIO); 
+
     window = SDL_CreateWindow("Chip-8 Emulator", WINDOW_WIDTH * SCALE, WINDOW_HEIGHT * SCALE, SDL_WINDOW_OPENGL);
     renderer = SDL_CreateRenderer(window, NULL);
     clearWindow();
@@ -75,9 +76,16 @@ void Chip8::init() {
     } else {
         std::cout << "Unable to read in file" << std::endl;
     }
-    showRamContent();
 
     configureSound();
+}
+
+void Chip8::clean() {
+    if (renderer) SDL_DestroyRenderer(renderer);
+    if (window) SDL_DestroyWindow(window);
+    if (stream) SDL_DestroyAudioStream(stream);
+    
+    SDL_Quit();
 }
 
 std::string Chip8::get_memory_region_label(std::size_t address) const {
@@ -184,7 +192,6 @@ void SDLCALL Chip8::FeedTheAudioStreamMore(void *userdata, SDL_AudioStream *astr
 }
 
 void Chip8::configureSound() {
-    SDL_Init(SDL_INIT_AUDIO);
     SDL_AudioSpec spec;
     spec.channels = 1;
     spec.format = SDL_AUDIO_F32;

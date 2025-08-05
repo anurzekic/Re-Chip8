@@ -20,6 +20,7 @@ public:
 
     void init();
     void run();
+    void clean();
 
 private:
     using display_t = std::array<std::array<bool, WINDOW_WIDTH>, WINDOW_HEIGHT>;
