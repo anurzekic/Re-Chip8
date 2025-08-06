@@ -13,12 +13,13 @@
 
 class Chip8 {
 public:
-    Chip8(const std::filesystem::path& rom_path);
+    Chip8();
     ~Chip8();
 
     Chip8(const Chip8&) = default;
 
-    void init();
+    bool init();
+    bool loadRom(const char *rom_path);
     void run();
     void clean();
 
@@ -75,7 +76,7 @@ private:
 
     static void SDLCALL FeedTheAudioStreamMore(void *userdata, SDL_AudioStream *astream, int additional_amount, int total_amount);
 
-    void configureSound();
+    bool configureSound();
     void playSound();
     void stopSound();
     static int current_sine_sample;

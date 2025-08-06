@@ -9,15 +9,9 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    std::filesystem::path rom_path(argv[1]);
-    if (!std::filesystem::exists(rom_path) || !std::filesystem::is_regular_file(rom_path)) {
-        std::cout << "File " << argv[1] << " does not exist." << std::endl;
-        return 2;
-    } else {
-        std::cout << "Starting " << argv[1] << std::endl;
-    }
-
-    Chip8 chip8(rom_path);
+    Chip8 chip8;
+    if (!chip8.loadRom(argv[1]) || !chip8.init())
+        return 1;
 
     chip8.run();
     

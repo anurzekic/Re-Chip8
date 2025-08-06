@@ -7,13 +7,12 @@
 #include <type_traits>
 #include <random>
 
-Chip8::Chip8(const std::filesystem::path& rom_path) : 
-    rom(rom_path, std::ios::in|std::ios::binary|std::ios::ate), PC(0x200), delay_timer(0), sound_timer(0), 
-    display{}, RAM{}, keypad{},  waiting_for_key_release(false), stream(NULL) 
+Chip8::Chip8() : 
+    PC(0x200), delay_timer(0), sound_timer(0), display{}, RAM{}, keypad{}, waiting_for_key_release(false), stream(NULL) 
 {
-    background_color.r = 120;
-    background_color.g = 140;
-    background_color.b = 90;
+    background_color.r = 0;
+    background_color.g = 0;
+    background_color.b = 0;
     background_color.a = 100;
 
     draw_color.r = 255;
@@ -38,12 +37,24 @@ void Chip8::clearWindow() {
     SDL_RenderClear(renderer);
 }
 
-void Chip8::init() {
-    // TODO Handle return values
-    SDL_InitSubSystem(SDL_INIT_VIDEO | SDL_INIT_AUDIO); 
+bool Chip8::init() {
+    if (!SDL_InitSubSystem(SDL_INIT_VIDEO | SDL_INIT_AUDIO) ) {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "SDL_InitSubSystem failed: %s", SDL_GetError());
+        return false;
+    }
 
-    window = SDL_CreateWindow("Chip-8 Emulator", WINDOW_WIDTH * SCALE, WINDOW_HEIGHT * SCALE, SDL_WINDOW_OPENGL);
+    window = SDL_CreateWindow("Re:Chip-8", WINDOW_WIDTH * SCALE, WINDOW_HEIGHT * SCALE, SDL_WINDOW_OPENGL);
+    if (!window) {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to create SDL window: %s", SDL_GetError());
+        return false;
+    }
+
     renderer = SDL_CreateRenderer(window, NULL);
+    if (!renderer) {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to create SDL renderer: %s", SDL_GetError());
+        return false;
+    }
+
     clearWindow();
 
     const std::array<uint8_t, 80> font = {        
@@ -63,7 +74,7 @@ void Chip8::init() {
         0xE0, 0x90, 0x90, 0x90, 0xE0, // D
         0xF0, 0x80, 0xF0, 0x80, 0xF0, // E
         0xF0, 0x80, 0xF0, 0x80, 0x80  // F
-    };
+    };    
     memcpy(RAM.data(), font.data(), sizeof(font));
 
     if (rom.is_open()) {
@@ -72,12 +83,18 @@ void Chip8::init() {
         rom.read(reinterpret_cast<char*>(RAM.data() + 0x200), size);
         rom.close();
 
-        std::cout << "Read file into memory" << std::endl;
+        SDL_Log("ROM loaded into memory (size: %ld bytes).", static_cast<long>(size));
     } else {
-        std::cout << "Unable to read in file" << std::endl;
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to load ROM file into memory.");
+        return false;
     }
 
-    configureSound();
+    if (!configureSound()) {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to configure audio.");
+        return false;
+    }
+
+    return true;
 }
 
 void Chip8::clean() {
@@ -191,7 +208,8 @@ void SDLCALL Chip8::FeedTheAudioStreamMore(void *userdata, SDL_AudioStream *astr
     }
 }
 
-void Chip8::configureSound() {
+// TODO Do something about the sound, because it sounds absolutely disgusting 
+bool Chip8::configureSound() {
     SDL_AudioSpec spec;
     spec.channels = 1;
     spec.format = SDL_AUDIO_F32;
@@ -200,7 +218,10 @@ void Chip8::configureSound() {
     stream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec, FeedTheAudioStreamMore, NULL);
     if (!stream) {
         SDL_Log("Couldn't create audio stream: %s", SDL_GetError());
+        return false;
     }
+
+    return true;
 }
 
 void Chip8::playSound() {
@@ -211,11 +232,29 @@ void Chip8::stopSound() {
     SDL_PauseAudioStreamDevice(stream);
 }
 
-void Chip8::run() {
-    init();
+bool Chip8::loadRom(const char *path) {
+    std::filesystem::path rom_path(path);
 
+    if (!std::filesystem::exists(rom_path) || !std::filesystem::is_regular_file(rom_path)) {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "ROM file does not exist: %s", rom_path.string().c_str());
+        return false;
+    }
+
+    rom = std::ifstream(rom_path, std::ios::in | std::ios::binary | std::ios::ate);
+    if (!rom.is_open()) {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to open ROM file: %s", rom_path.string().c_str());
+        return false;
+    }
+
+    SDL_Log("ROM loaded: %s", rom_path.string().c_str());
+
+    return true;
+}
+
+void Chip8::run() {
     is_running = true;
     is_paused = false;
+    
     size_t instructions_per_frame = INSTRUCTION_PER_SECOND / FPS; 
     
     while (is_running) {
