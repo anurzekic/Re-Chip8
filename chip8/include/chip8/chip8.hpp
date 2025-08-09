@@ -1,7 +1,7 @@
 #pragma once
 
 #include "chip8/timer.hpp"
-#include "chip8/defines.h"
+#include "chip8/defines.hpp"
 
 #include <array>
 #include <stack>
@@ -23,6 +23,9 @@ public:
     void run();
     void clean();
 
+    std::array<bool, 16> keypad;
+    bool is_running;
+    bool is_paused;
 private:
     using display_t = std::array<std::array<bool, WINDOW_WIDTH>, WINDOW_HEIGHT>;
 
@@ -40,7 +43,6 @@ private:
 
     std::stack<uint16_t> stack;
 
-    std::array<bool, 16> keypad;
     bool waiting_for_key_release;
     std::map<SDL_Scancode, uint8_t> key_bindings;
 
@@ -62,9 +64,6 @@ private:
     bool draw_to_screen = false;
     
     std::ifstream rom;
-
-    bool is_running;
-    bool is_paused;
 
     void clearWindow();
     void renderDisplay();

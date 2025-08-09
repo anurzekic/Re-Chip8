@@ -1,10 +1,11 @@
 #include "chip8/chip8.hpp"
 
-#include <chrono>
+#include "imgui.h"
+#include "backends/imgui_impl_sdl3.h"
+#include "backends/imgui_impl_sdlrenderer3.h"
+
 #include <cstdint>
 #include <iostream>
-#include <thread>
-#include <type_traits>
 #include <random>
 
 Chip8::Chip8() : 
@@ -43,7 +44,7 @@ bool Chip8::init() {
         return false;
     }
 
-    window = SDL_CreateWindow("Re:Chip-8", WINDOW_WIDTH * SCALE, WINDOW_HEIGHT * SCALE, SDL_WINDOW_OPENGL);
+    window = SDL_CreateWindow("Re:Chip-8", WINDOW_WIDTH * SCALE, WINDOW_HEIGHT * SCALE, 0);
     if (!window) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to create SDL window: %s", SDL_GetError());
         return false;
