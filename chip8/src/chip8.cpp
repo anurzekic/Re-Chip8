@@ -9,7 +9,8 @@
 #include <random>
 
 Chip8::Chip8() : 
-    PC(0x200), delay_timer(0), sound_timer(0), display{}, RAM{}, keypad{}, waiting_for_key_release(false), stream(NULL) 
+    PC(0x200), delay_timer(0), sound_timer(0), display{}, RAM{}, keypad{}, waiting_for_key_release(false), 
+    stream(NULL), is_running(true), is_paused(false)
 {
     background_color.r = 0;
     background_color.g = 0;
@@ -33,30 +34,30 @@ Chip8::~Chip8() {
     clean();
 }
 
-void Chip8::clearWindow() {
-    SDL_SetRenderDrawColor(renderer, background_color.r, background_color.g, background_color.b, background_color.a);
-    SDL_RenderClear(renderer);
-}
+// void Chip8::clearWindow() {
+//     SDL_SetRenderDrawColor(renderer, background_color.r, background_color.g, background_color.b, background_color.a);
+//     SDL_RenderClear(renderer);
+// }
 
 bool Chip8::init() {
-    if (!SDL_InitSubSystem(SDL_INIT_VIDEO | SDL_INIT_AUDIO) ) {
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "SDL_InitSubSystem failed: %s", SDL_GetError());
-        return false;
-    }
+    // if (!SDL_InitSubSystem(SDL_INIT_VIDEO | SDL_INIT_AUDIO) ) {
+    //     SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "SDL_InitSubSystem failed: %s", SDL_GetError());
+    //     return false;
+    // }
 
-    window = SDL_CreateWindow("Re:Chip-8", WINDOW_WIDTH * SCALE, WINDOW_HEIGHT * SCALE, 0);
-    if (!window) {
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to create SDL window: %s", SDL_GetError());
-        return false;
-    }
+    // window = SDL_CreateWindow("Re:Chip-8", WINDOW_WIDTH * SCALE, WINDOW_HEIGHT * SCALE, 0);
+    // if (!window) {
+    //     SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to create SDL window: %s", SDL_GetError());
+    //     return false;
+    // }
 
-    renderer = SDL_CreateRenderer(window, NULL);
-    if (!renderer) {
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to create SDL renderer: %s", SDL_GetError());
-        return false;
-    }
+    // renderer = SDL_CreateRenderer(window, NULL);
+    // if (!renderer) {
+    //     SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to create SDL renderer: %s", SDL_GetError());
+    //     return false;
+    // }
 
-    clearWindow();
+    // clearWindow();
 
     const std::array<uint8_t, 80> font = {        
         0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
@@ -90,20 +91,20 @@ bool Chip8::init() {
         return false;
     }
 
-    if (!configureSound()) {
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to configure audio.");
-        return false;
-    }
+    // if (!configureSound()) {
+    //     SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to configure audio.");
+    //     return false;
+    // }
 
     return true;
 }
 
 void Chip8::clean() {
-    if (renderer) SDL_DestroyRenderer(renderer);
-    if (window) SDL_DestroyWindow(window);
-    if (stream) SDL_DestroyAudioStream(stream);
+    // if (renderer) SDL_DestroyRenderer(renderer);
+    // if (window) SDL_DestroyWindow(window);
+    // if (stream) SDL_DestroyAudioStream(stream);
     
-    SDL_Quit();
+    // SDL_Quit();
 }
 
 std::string Chip8::get_memory_region_label(std::size_t address) const {
@@ -151,87 +152,87 @@ void Chip8::showRamContent() const {
     }
 }
 
-void Chip8::renderDisplay() {
-    SDL_SetRenderDrawColor(renderer, background_color.r, background_color.g, background_color.b, background_color.a);
-    SDL_RenderClear(renderer);
+// void Chip8::renderDisplay() {
+//     SDL_SetRenderDrawColor(renderer, background_color.r, background_color.g, background_color.b, background_color.a);
+//     SDL_RenderClear(renderer);
 
-    SDL_SetRenderDrawColor(renderer, draw_color.r, draw_color.g, draw_color.b, draw_color.a);
+//     SDL_SetRenderDrawColor(renderer, draw_color.r, draw_color.g, draw_color.b, draw_color.a);
 
-    for (int y = 0; y < WINDOW_HEIGHT; ++y) {
-        for (int x = 0; x < WINDOW_WIDTH; ++x) {
-            if (display[y][x]) {
-                SDL_FRect pixel{
-                    static_cast<float>(x) * SCALE,
-                    static_cast<float>(y) * SCALE,
-                    SCALE, SCALE
-                };
-                SDL_RenderFillRect(renderer, &pixel);
-            }
-        }
-    }
-    SDL_RenderPresent(renderer);
-}
+//     for (int y = 0; y < WINDOW_HEIGHT; ++y) {
+//         for (int x = 0; x < WINDOW_WIDTH; ++x) {
+//             if (display[y][x]) {
+//                 SDL_FRect pixel{
+//                     static_cast<float>(x) * SCALE,
+//                     static_cast<float>(y) * SCALE,
+//                     SCALE, SCALE
+//                 };
+//                 SDL_RenderFillRect(renderer, &pixel);
+//             }
+//         }
+//     }
+//     SDL_RenderPresent(renderer);
+// }
 
-void Chip8::handleInput(const SDL_Scancode& key, const Uint32& event_type) {
-    if (event_type == SDL_EVENT_KEY_DOWN) {
-        if (key == SDL_SCANCODE_ESCAPE)
-            is_running = false;
-        else if (key == SDL_SCANCODE_SPACE)
-            is_paused ^= 1;
-        else if (key_bindings.find(key) != key_bindings.end())
-            keypad[key_bindings[key]] = 1;
-    } else if (event_type == SDL_EVENT_KEY_UP) {
-            if (key_bindings.find(key) != key_bindings.end())
-                keypad[key_bindings[key]] = 0;
-    }
-}
+// void Chip8::handleInput(const SDL_Scancode& key, const Uint32& event_type) {
+//     if (event_type == SDL_EVENT_KEY_DOWN) {
+//         if (key == SDL_SCANCODE_ESCAPE)
+//             is_running = false;
+//         else if (key == SDL_SCANCODE_SPACE)
+//             is_paused ^= 1;
+//         else if (key_bindings.find(key) != key_bindings.end())
+//             keypad[key_bindings[key]] = 1;
+//     } else if (event_type == SDL_EVENT_KEY_UP) {
+//             if (key_bindings.find(key) != key_bindings.end())
+//                 keypad[key_bindings[key]] = 0;
+//     }
+// }
 
-int Chip8::current_sine_sample = 0;
-void SDLCALL Chip8::FeedTheAudioStreamMore(void *userdata, SDL_AudioStream *astream, int additional_amount, int total_amount)
-{
-    additional_amount /= sizeof (float);
-    while (additional_amount > 0) {
-        float samples[128];
-        const int total = SDL_min(additional_amount, SDL_arraysize(samples));
-        int i;
+// int Chip8::current_sine_sample = 0;
+// void SDLCALL Chip8::FeedTheAudioStreamMore(void *userdata, SDL_AudioStream *astream, int additional_amount, int total_amount)
+// {
+//     additional_amount /= sizeof (float);
+//     while (additional_amount > 0) {
+//         float samples[128];
+//         const int total = SDL_min(additional_amount, SDL_arraysize(samples));
+//         int i;
 
-        for (i = 0; i < total; i++) {
-            const int freq = 440;
-            const float phase = current_sine_sample * freq / 8000.0f;
-            samples[i] = SDL_sinf(phase * 2 * SDL_PI_F);
-            current_sine_sample++;
-        }
+//         for (i = 0; i < total; i++) {
+//             const int freq = 440;
+//             const float phase = current_sine_sample * freq / 8000.0f;
+//             samples[i] = SDL_sinf(phase * 2 * SDL_PI_F);
+//             current_sine_sample++;
+//         }
 
-        current_sine_sample %= 8000;
+//         current_sine_sample %= 8000;
 
-        SDL_PutAudioStreamData(astream, samples, total * sizeof (float));
-        additional_amount -= total;
-    }
-}
+//         SDL_PutAudioStreamData(astream, samples, total * sizeof (float));
+//         additional_amount -= total;
+//     }
+// }
 
-// TODO Do something about the sound, because it sounds absolutely disgusting 
-bool Chip8::configureSound() {
-    SDL_AudioSpec spec;
-    spec.channels = 1;
-    spec.format = SDL_AUDIO_F32;
-    spec.freq = 8000;
+// // TODO Do something about the sound, because it sounds absolutely disgusting 
+// bool Chip8::configureSound() {
+//     SDL_AudioSpec spec;
+//     spec.channels = 1;
+//     spec.format = SDL_AUDIO_F32;
+//     spec.freq = 8000;
     
-    stream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec, FeedTheAudioStreamMore, NULL);
-    if (!stream) {
-        SDL_Log("Couldn't create audio stream: %s", SDL_GetError());
-        return false;
-    }
+//     stream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec, FeedTheAudioStreamMore, NULL);
+//     if (!stream) {
+//         SDL_Log("Couldn't create audio stream: %s", SDL_GetError());
+//         return false;
+//     }
 
-    return true;
-}
+//     return true;
+// }
 
-void Chip8::playSound() {
-    SDL_ResumeAudioStreamDevice(stream);
-}
+// void Chip8::playSound() {
+//     SDL_ResumeAudioStreamDevice(stream);
+// }
 
-void Chip8::stopSound() {
-    SDL_PauseAudioStreamDevice(stream);
-}
+// void Chip8::stopSound() {
+//     SDL_PauseAudioStreamDevice(stream);
+// }
 
 bool Chip8::loadRom(const char *path) {
     std::filesystem::path rom_path(path);
@@ -253,19 +254,19 @@ bool Chip8::loadRom(const char *path) {
 }
 
 void Chip8::run() {
-    is_running = true;
-    is_paused = false;
+    // is_running = true;
+    // is_paused = false;
     
-    size_t instructions_per_frame = INSTRUCTION_PER_SECOND / FPS; 
+    size_t instructions_per_frame = INSTRUCTIONS_PER_SECOND / FPS; 
     
-    while (is_running) {
+    // while (is_running) {
         
-        SDL_Event event;        
-        while (SDL_PollEvent(&event)) {  
-            handleInput(event.key.scancode, event.type);
-        }
+        // SDL_Event event;        
+        // while (SDL_PollEvent(&event)) {  
+        //     handleInput(event.key.scancode, event.type);
+        // }
 
-        if (!is_paused) {
+        // if (!is_paused) {
             for (size_t i = 0; i < instructions_per_frame; i++) {
                 // Fetch and execute instructions
                 uint16_t instruction = RAM[PC] << 8 | RAM[PC + 1];
@@ -273,22 +274,24 @@ void Chip8::run() {
                 executeInstruction(instruction);
             }
             
-            if (draw_to_screen)
-                renderDisplay();        
-        }
+            // if (draw_to_screen)
+            //     renderDisplay();        
+        // }
 
         if (delay_timer > 0)
             delay_timer--;
 
         if (sound_timer > 0) {
             sound_timer--;
-            playSound();
+            play_sound = true;
+            // playSound();
         } else {
-            stopSound();
+            // stopSound();
+            play_sound = false;
         }
         
-        fps_cap_timer.sleep();  
-    }
+        // fps_cap_timer.sleep();  
+    // }
 }
 
 void Chip8::executeInstruction(uint16_t instruction) {
@@ -462,7 +465,8 @@ void Chip8::instr_set_F(uint16_t instruction, uint8_t x) {
 
 void Chip8::instr_00E0() {
     std::fill(display.begin(), display.end(), std::array<bool, WINDOW_WIDTH>{});
-    clearWindow();
+    // clearWindow();
+    draw_to_screen = true;
 }
 
 void Chip8::instr_00EE() {

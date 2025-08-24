@@ -1,7 +1,8 @@
 #pragma once
 
 #include "chip8/timer.hpp"
-#include "chip8/defines.hpp"
+// #include "chip8/defines.hpp"
+#include "config.hpp"
 
 #include <array>
 #include <stack>
@@ -26,9 +27,14 @@ public:
     std::array<bool, 16> keypad;
     bool is_running;
     bool is_paused;
-private:
+    bool draw_to_screen = false;
+    bool play_sound = false;
+
     using display_t = std::array<std::array<bool, WINDOW_WIDTH>, WINDOW_HEIGHT>;
 
+    display_t display;
+
+private:
     std::array<uint8_t, 4096> RAM;
     // Registers
     std::array<uint8_t, 16> V;
@@ -46,11 +52,11 @@ private:
     bool waiting_for_key_release;
     std::map<SDL_Scancode, uint8_t> key_bindings;
 
-    display_t display;
-    SDL_Window *window;
-    SDL_Renderer *renderer;
+    // display_t display;
+    // SDL_Window *window;
+    // SDL_Renderer *renderer;
 
-    Timer<FPS> fps_cap_timer;
+    // Timer<FPS> fps_cap_timer;
 
     struct color {
         uint8_t r;
@@ -61,17 +67,16 @@ private:
 
     color background_color;
     color draw_color;
-    bool draw_to_screen = false;
     
     std::ifstream rom;
 
-    void clearWindow();
-    void renderDisplay();
+    // void clearWindow();
+    // void renderDisplay();
 
     std::string get_memory_region_label(std::size_t address) const;
     void showRamContent() const;
 
-    void handleInput(const SDL_Scancode& key, const Uint32& event_type);
+    // void handleInput(const SDL_Scancode& key, const Uint32& event_type);
 
     static void SDLCALL FeedTheAudioStreamMore(void *userdata, SDL_AudioStream *astream, int additional_amount, int total_amount);
 

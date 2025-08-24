@@ -25,5 +25,5 @@ public:
     bool checkValidKeyPressed(const SDL_Scancode& scancode) const;
 
 private:
-    std::map<SDL_Scancode, uint8_t> key_bindings; // Key bindings
+    std::map<SDL_Scancode, uint8_t> key_bindings;
 };
