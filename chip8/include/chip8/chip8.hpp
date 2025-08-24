@@ -15,14 +15,13 @@
 class Chip8 {
 public:
     Chip8();
-    ~Chip8();
+    ~Chip8() = default;
 
     Chip8(const Chip8&) = default;
 
     bool init();
     bool loadRom(const char *rom_path);
     void run();
-    void clean();
 
     std::array<bool, 16> keypad;
     bool is_running;
@@ -51,13 +50,6 @@ private:
 
     bool waiting_for_key_release;
     std::map<SDL_Scancode, uint8_t> key_bindings;
-
-    // display_t display;
-    // SDL_Window *window;
-    // SDL_Renderer *renderer;
-
-    // Timer<FPS> fps_cap_timer;
-
     struct color {
         uint8_t r;
         uint8_t g;
@@ -70,21 +62,8 @@ private:
     
     std::ifstream rom;
 
-    // void clearWindow();
-    // void renderDisplay();
-
     std::string get_memory_region_label(std::size_t address) const;
     void showRamContent() const;
-
-    // void handleInput(const SDL_Scancode& key, const Uint32& event_type);
-
-    static void SDLCALL FeedTheAudioStreamMore(void *userdata, SDL_AudioStream *astream, int additional_amount, int total_amount);
-
-    bool configureSound();
-    void playSound();
-    void stopSound();
-    static int current_sine_sample;
-    SDL_AudioStream *stream;
 
     void executeInstruction(uint16_t instruction);
     // Standard Chip-8 Instructions

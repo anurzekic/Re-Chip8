@@ -38,11 +38,9 @@ int main(int argc, char **argv) {
         return 1;
     
     {    
+        SoundManager sound_manager;
         Timer<FPS> fps_cap_timer;
 
-        // TODO add to constructor
-        size_t instructions_per_frame = INSTRUCTIONS_PER_SECOND / FPS;  
-        SoundManager sound_manager;
         while (chip8.is_running) {
             SDL_Event event;        
             while (SDL_PollEvent(&event)) {  
@@ -70,12 +68,9 @@ int main(int argc, char **argv) {
 
     // Clean up
     if (renderer) SDL_DestroyRenderer(renderer);
-    SDL_Log("Exiting 2");
-
     if (window) SDL_DestroyWindow(window);
-    SDL_Log("Exiting 3");
 
-    SDL_Log("Exiting 4");
     SDL_Quit();
+
     return 0;
 }
