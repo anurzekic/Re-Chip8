@@ -33,8 +33,8 @@ public:
 
     display_t display;
 
-private:
     std::array<uint8_t, 4096> RAM;
+private:
     // Registers
     std::array<uint8_t, 16> V;
     

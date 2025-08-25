@@ -1,9 +1,5 @@
 #include "chip8/chip8.hpp"
 
-#include "imgui.h"
-#include "backends/imgui_impl_sdl3.h"
-#include "backends/imgui_impl_sdlrenderer3.h"
-
 #include <cstdint>
 #include <iostream>
 #include <random>
