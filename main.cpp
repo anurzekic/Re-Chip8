@@ -3,6 +3,8 @@
 #include "chip8/renderer.hpp"
 #include "chip8/input_handler.hpp"
 
+#include "gui/debugger.hpp"
+
 #include "imgui.h"
 #include "backends/imgui_impl_sdl3.h"
 #include "backends/imgui_impl_sdlrenderer3.h"
@@ -62,6 +64,8 @@ int main(int argc, char **argv) {
     if (!chip8.loadRom(argv[1]) || !chip8.init())
         return 1;
     
+    Debugger gui_debugger;    
+        
     {    
         SoundManager sound_manager;
         Timer<FPS> fps_cap_timer;
@@ -93,6 +97,8 @@ int main(int argc, char **argv) {
 
             ImGui::ShowDemoWindow(&show_demo_window);
             
+            gui_debugger.showRegisters(chip8.V);
+
             static MemoryEditor mem_edit;
             mem_edit.DrawWindow("RAM", chip8.RAM.data(), sizeof(chip8.RAM));
 
