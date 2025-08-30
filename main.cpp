@@ -98,6 +98,7 @@ int main(int argc, char **argv) {
             ImGui::ShowDemoWindow(&show_demo_window);
             
             gui_debugger.showRegisters(chip8.V);
+            gui_debugger.showTimers(chip8.PC, chip8.I, chip8.delay_timer, chip8.sound_timer);
 
             static MemoryEditor mem_edit;
             mem_edit.DrawWindow("RAM", chip8.RAM.data(), sizeof(chip8.RAM));

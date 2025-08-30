@@ -37,7 +37,6 @@ public:
     // Registers
     std::array<uint8_t, 16> V;
 
-private:    
     // Special registers
     uint16_t I;
     uint8_t delay_timer;
@@ -46,6 +45,7 @@ private:
     // Program counter
     uint16_t PC;
 
+private:    
     std::stack<uint16_t> stack;
 
     bool waiting_for_key_release;

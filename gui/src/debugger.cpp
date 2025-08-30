@@ -1,5 +1,4 @@
 #include "gui/debugger.hpp"
-#include "imgui.h"
 
 void Debugger::showRegisters(std::array<uint8_t, 16>& registers) {
     if (!ImGui::Begin("Registers")) {
@@ -47,8 +46,44 @@ void Debugger::showRegisters(std::array<uint8_t, 16>& registers) {
     ImGui::End();
 }
 
-void showTimers() {
+void Debugger::showTimers(uint16_t& PC, uint16_t& I, uint8_t& delay_timer, uint8_t& sound_timer) {
+    if (!ImGui::Begin("Special Registers")) {
+        ImGui::End();
+        return;
+    }
+    static ImGuiTableFlags flags = ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV | ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable;
+    ImVec2 outer_size = ImVec2(0.0f, ImGui::GetTextLineHeightWithSpacing() * 4);
+    if (ImGui::BeginTable("Registers", 2, flags, outer_size))
+    {
+        ImGui::TableSetupScrollFreeze(0, 1); // Make top row always visible
+        ImGui::TableSetupColumn("Register", ImGuiTableColumnFlags_None);
+        ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_None);
+        ImGui::TableHeadersRow();
 
+        ImGui::TableNextRow();
+        ImGui::TableSetColumnIndex(0);
+        ImGui::Text("Sound Timer");
+        insertEditableValue(sound_timer, 0);
+
+        ImGui::TableNextRow();
+        ImGui::TableSetColumnIndex(0);
+        ImGui::Text("Delay Timer");
+        insertEditableValue(delay_timer, 1);
+
+        ImGui::TableNextRow();
+        ImGui::TableSetColumnIndex(0);
+        ImGui::Text("I");
+        insertEditableValue(I, 2);
+
+        ImGui::TableNextRow();
+        ImGui::TableSetColumnIndex(0);
+        ImGui::Text("PC");
+        insertEditableValue(PC, 3);        
+
+        ImGui::EndTable();
+    }        
+
+    ImGui::End();
 }
 
 void showProgrammCounter() {
