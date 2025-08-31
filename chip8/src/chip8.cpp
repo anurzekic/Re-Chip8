@@ -321,8 +321,8 @@ void Chip8::instr_00E0() {
 }
 
 void Chip8::instr_00EE() {
-    PC = stack.top();
-    stack.pop();
+    PC = stack.back();
+    stack.pop_back();
 } 
 
 void Chip8::instr_0nnn(uint16_t nnn) {
@@ -334,7 +334,7 @@ void Chip8::instr_1nnn(uint16_t nnn) {
 }
 
 void Chip8::instr_2nnn(uint16_t nnn) {
-    stack.push(PC);
+    stack.push_back(PC);
     PC = nnn;
 }
 

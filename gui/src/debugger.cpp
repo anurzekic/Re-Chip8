@@ -75,17 +75,74 @@ void Debugger::showTimers(uint16_t& PC, uint16_t& I, uint8_t& delay_timer, uint8
         ImGui::Text("I");
         insertEditableValue(I, 2);
 
-        ImGui::TableNextRow();
-        ImGui::TableSetColumnIndex(0);
-        ImGui::Text("PC");
-        insertEditableValue(PC, 3);        
-
         ImGui::EndTable();
     }        
 
     ImGui::End();
 }
 
-void showProgrammCounter() {
+void Debugger::showProgramCounter(uint16_t& PC) {
+    // TODO Add instruction reversal (the timers and stuff)
+    if (!ImGui::Begin("Program Counter")) {
+        ImGui::End();
+        return;
+    }
 
+    int programCounter = PC;
+
+    // -2 button
+    if (ImGui::Button("-2")) {
+        PC -= 4;
+    }
+    ImGui::SameLine();
+
+    // -1 button
+    if (ImGui::Button("-1")) {
+        PC -= 2;
+    }
+    ImGui::SameLine();
+
+    // Editable input
+    ImGui::PushItemWidth(100); // make it narrower
+    ImGui::InputScalar("##reg", ImGuiDataType_U8, &programCounter,
+                       nullptr, nullptr, "%04X",
+                       ImGuiInputTextFlags_CharsHexadecimal);    
+    ImGui::PopItemWidth();
+    ImGui::SameLine();
+
+    // +1 button
+    if (ImGui::Button("+1")) {
+        PC += 2;
+    }
+    ImGui::SameLine();
+
+    // +2 button
+    if (ImGui::Button("+2")) {
+        PC += 4;
+    }
+
+    ImGui::End();
 }
+
+void Debugger::showStack(std::vector<uint16_t>& stack) {
+    if (!ImGui::Begin("Stack")) {
+        ImGui::End();
+        return;
+    }
+
+    createTable("Stack", "Stack", "Value", stack);
+
+    ImGui::End();
+}
+
+void Debugger::showKeypad(std::array<bool, 16>& keypad) {
+    if (!ImGui::Begin("Keypad")) {
+        ImGui::End();
+        return;
+    }
+
+    createTable("Keypad", "Key", "Value", keypad);
+
+    ImGui::End();
+}
+

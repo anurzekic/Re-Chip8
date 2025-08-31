@@ -5,7 +5,7 @@
 #include "config.hpp"
 
 #include <array>
-#include <stack>
+#include <vector>
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
@@ -45,9 +45,9 @@ public:
     // Program counter
     uint16_t PC;
 
-private:    
-    std::stack<uint16_t> stack;
+    std::vector<uint16_t> stack;
 
+private:    
     bool waiting_for_key_release;
     std::map<SDL_Scancode, uint8_t> key_bindings;
     struct color {

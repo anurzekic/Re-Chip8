@@ -95,11 +95,15 @@ int main(int argc, char **argv) {
             ImGui_ImplSDL3_NewFrame();
             ImGui::NewFrame();
 
-            ImGui::ShowDemoWindow(&show_demo_window);
+            // ImGui::ShowDemoWindow(&show_demo_window);
             
             gui_debugger.showRegisters(chip8.V);
             gui_debugger.showTimers(chip8.PC, chip8.I, chip8.delay_timer, chip8.sound_timer);
+            gui_debugger.showProgramCounter(chip8.PC);
+            gui_debugger.showStack(chip8.stack);
+            gui_debugger.showKeypad(chip8.keypad);
 
+            // TODO Add highlighting of current instruction
             static MemoryEditor mem_edit;
             mem_edit.DrawWindow("RAM", chip8.RAM.data(), sizeof(chip8.RAM));
 
