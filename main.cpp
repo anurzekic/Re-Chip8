@@ -99,12 +99,15 @@ int main(int argc, char **argv) {
             
             gui_debugger.showRegisters(chip8.V);
             gui_debugger.showTimers(chip8.PC, chip8.I, chip8.delay_timer, chip8.sound_timer);
-            gui_debugger.showProgramCounter(chip8.PC);
+            gui_debugger.showProgramCounter(chip8.PC, chip8.RAM);
             gui_debugger.showStack(chip8.stack);
             gui_debugger.showKeypad(chip8.keypad);
 
             // TODO Add highlighting of current instruction
             static MemoryEditor mem_edit;
+            mem_edit.HighlightMin = chip8.PC;
+            mem_edit.HighlightMax = chip8.PC + 1;
+            mem_edit.HighlightColor = ImGui::ColorConvertFloat4ToU32(ImVec4(1.0f, 0.2f, 0.2f, 1.0f));
             mem_edit.DrawWindow("RAM", chip8.RAM.data(), sizeof(chip8.RAM));
 
             ImGui::Render();

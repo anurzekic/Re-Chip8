@@ -81,48 +81,114 @@ void Debugger::showTimers(uint16_t& PC, uint16_t& I, uint8_t& delay_timer, uint8
     ImGui::End();
 }
 
-void Debugger::showProgramCounter(uint16_t& PC) {
-    // TODO Add instruction reversal (the timers and stuff)
+std::string Debugger::disassemble(uint16_t opcode) {
+    uint16_t nnn = opcode & 0x0FFF;      // address
+    uint8_t  nn  = opcode & 0x00FF;      // 8-bit constant
+    uint8_t  n   = opcode & 0x000F;      // 4-bit constant
+    uint8_t  x   = (opcode >> 8) & 0x0F; // register X
+    uint8_t  y   = (opcode >> 4) & 0x0F; // register Y
+
+    char buf[64];
+
+    switch (opcode & 0xF000) {
+        case 0x0000:
+            switch (opcode) {
+                case 0x00E0: return "CLS";
+                case 0x00EE: return "RET";
+                default: snprintf(buf, sizeof(buf), "SYS %03X", nnn); return buf;
+            }
+        case 0x1000: snprintf(buf, sizeof(buf), "JP %03X", nnn); return buf;
+        case 0x2000: snprintf(buf, sizeof(buf), "CALL %03X", nnn); return buf;
+        case 0x3000: snprintf(buf, sizeof(buf), "SE V%X, %02X", x, nn); return buf;
+        case 0x4000: snprintf(buf, sizeof(buf), "SNE V%X, %02X", x, nn); return buf;
+        case 0x5000: snprintf(buf, sizeof(buf), "SE V%X, V%X", x, y); return buf;
+        case 0x6000: snprintf(buf, sizeof(buf), "LD V%X, %02X", x, nn); return buf;
+        case 0x7000: snprintf(buf, sizeof(buf), "ADD V%X, %02X", x, nn); return buf;
+        case 0x8000:
+            switch (opcode & 0x000F) {
+                case 0x0: snprintf(buf, sizeof(buf), "LD V%X, V%X", x, y); return buf;
+                case 0x1: snprintf(buf, sizeof(buf), "OR V%X, V%X", x, y); return buf;
+                case 0x2: snprintf(buf, sizeof(buf), "AND V%X, V%X", x, y); return buf;
+                case 0x3: snprintf(buf, sizeof(buf), "XOR V%X, V%X", x, y); return buf;
+                case 0x4: snprintf(buf, sizeof(buf), "ADD V%X, V%X", x, y); return buf;
+                case 0x5: snprintf(buf, sizeof(buf), "SUB V%X, V%X", x, y); return buf;
+                case 0x6: snprintf(buf, sizeof(buf), "SHR V%X", x); return buf;
+                case 0x7: snprintf(buf, sizeof(buf), "SUBN V%X, V%X", x, y); return buf;
+                case 0xE: snprintf(buf, sizeof(buf), "SHL V%X", x); return buf;
+                default: return "UNKNOWN";
+            }
+        case 0x9000: snprintf(buf, sizeof(buf), "SNE V%X, V%X", x, y); return buf;
+        case 0xA000: snprintf(buf, sizeof(buf), "LD I, %03X", nnn); return buf;
+        case 0xB000: snprintf(buf, sizeof(buf), "JP V0, %03X", nnn); return buf;
+        case 0xC000: snprintf(buf, sizeof(buf), "RND V%X, %02X", x, nn); return buf;
+        case 0xD000: snprintf(buf, sizeof(buf), "DRW V%X, V%X, %X", x, y, n); return buf;
+        case 0xE000:
+            switch (opcode & 0x00FF) {
+                case 0x9E: snprintf(buf, sizeof(buf), "SKP V%X", x); return buf;
+                case 0xA1: snprintf(buf, sizeof(buf), "SKNP V%X", x); return buf;
+                default: return "UNKNOWN";
+            }
+        case 0xF000:
+            switch (opcode & 0x00FF) {
+                case 0x07: snprintf(buf, sizeof(buf), "LD V%X, DT", x); return buf;
+                case 0x0A: snprintf(buf, sizeof(buf), "LD V%X, K", x); return buf;
+                case 0x15: snprintf(buf, sizeof(buf), "LD DT, V%X", x); return buf;
+                case 0x18: snprintf(buf, sizeof(buf), "LD ST, V%X", x); return buf;
+                case 0x1E: snprintf(buf, sizeof(buf), "ADD I, V%X", x); return buf;
+                case 0x29: snprintf(buf, sizeof(buf), "LD F, V%X", x); return buf;
+                case 0x33: snprintf(buf, sizeof(buf), "LD B, V%X", x); return buf;
+                case 0x55: snprintf(buf, sizeof(buf), "LD [I], V0-V%X", x); return buf;
+                case 0x65: snprintf(buf, sizeof(buf), "LD V0-V%X, [I]", x); return buf;
+                default: return "UNKNOWN";
+            }
+        default:
+            return "UNKNOWN";
+    }
+}
+
+void TextCentered(std::string text) {
+    auto windowWidth = ImGui::GetWindowSize().x;
+    auto textWidth   = ImGui::CalcTextSize(text.c_str()).x;
+
+    ImGui::SetCursorPosX((windowWidth - textWidth) * 0.5f);
+    ImGui::Text(text.c_str());
+}
+
+void Debugger::showProgramCounter(uint16_t& PC, std::array<uint8_t, 4096>& RAM) {
     if (!ImGui::Begin("Program Counter")) {
         ImGui::End();
         return;
     }
 
-    int programCounter = PC;
+    ImGui::Columns(3, nullptr, false);
 
-    // -2 button
-    if (ImGui::Button("-2")) {
-        PC -= 4;
+    if (ImGui::Button("-2")) PC = (PC >= 4) ? PC - 4 : 0x200;
+    if (ImGui::Button("-1")) PC = (PC >= 2) ? PC - 2 : 0x200;
+
+    ImGui::NextColumn(); // move to center column
+
+    auto columnWidth = ImGui::GetColumnWidth();
+    if (PC + 1 < RAM.size()) {
+        uint16_t opcode = (RAM[PC] << 8) | RAM[PC + 1];
+        ImGui::Text("PC: %03X", PC);
+        TextCentered("Instruction:");
+        ImGui::Text("%04X (%s)", opcode, disassemble(opcode).c_str());
+    } else {
+        ImGui::Text("PC: %03X", PC);
+        ImGui::Text("Instruction:");
+        ImGui::Text("<out of range>");
     }
-    ImGui::SameLine();
 
-    // -1 button
-    if (ImGui::Button("-1")) {
-        PC -= 2;
-    }
-    ImGui::SameLine();
+    ImGui::NextColumn(); // move to right column
 
-    // Editable input
-    ImGui::PushItemWidth(100); // make it narrower
-    ImGui::InputScalar("##reg", ImGuiDataType_U8, &programCounter,
-                       nullptr, nullptr, "%04X",
-                       ImGuiInputTextFlags_CharsHexadecimal);    
-    ImGui::PopItemWidth();
-    ImGui::SameLine();
+    if (ImGui::Button("+1")) PC += 2;
+    if (ImGui::Button("+2")) PC += 4;
 
-    // +1 button
-    if (ImGui::Button("+1")) {
-        PC += 2;
-    }
-    ImGui::SameLine();
-
-    // +2 button
-    if (ImGui::Button("+2")) {
-        PC += 4;
-    }
+    ImGui::Columns(1); // reset columns
 
     ImGui::End();
 }
+
 
 void Debugger::showStack(std::vector<uint16_t>& stack) {
     if (!ImGui::Begin("Stack")) {
@@ -141,7 +207,35 @@ void Debugger::showKeypad(std::array<bool, 16>& keypad) {
         return;
     }
 
-    createTable("Keypad", "Key", "Value", keypad);
+    static const int layout[16] = {
+        0x1, 0x2, 0x3, 0xC,
+        0x4, 0x5, 0x6, 0xD,
+        0x7, 0x8, 0x9, 0xE,
+        0xA, 0x0, 0xB, 0xF
+    };
+
+    if (ImGui::BeginTable("KeypadTable", 4, ImGuiTableFlags_Borders)) {
+        for (int i = 0; i < 16; i++) {
+            if (i % 4 == 0)
+                ImGui::TableNextRow();
+
+            ImGui::TableSetColumnIndex(i % 4);
+
+            int key = layout[i];
+            ImGui::PushID(key);
+
+            bool pressed = keypad[key];
+            char label[3];
+            snprintf(label, sizeof(label), "%X", key); // show as hex (0–F)
+
+            if (ImGui::Selectable(label, pressed, ImGuiSelectableFlags_None, ImVec2(40, 40))) {
+                keypad[key] = !pressed;
+            }
+
+            ImGui::PopID();
+        }
+        ImGui::EndTable();
+    }
 
     ImGui::End();
 }
