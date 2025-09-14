@@ -18,9 +18,10 @@ public:
     void showProgramCounter(uint16_t& PC, std::array<uint8_t, 4096>& RAM);
     void showStack(std::vector<uint16_t>& stack);
     void showKeypad(std::array<bool, 16>& keypad);
+    void showDisassembly(const uint16_t& PC, const std::array<uint8_t, 4096>& RAM, long rom_size);
+private:
     std::string disassemble(uint16_t opcode);
 
-private:
     template<typename InputT>
     void insertEditableValue(InputT& value, int id) {
         ImGui::TableSetColumnIndex(1);

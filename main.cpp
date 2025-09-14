@@ -102,6 +102,7 @@ int main(int argc, char **argv) {
             gui_debugger.showProgramCounter(chip8.PC, chip8.RAM);
             gui_debugger.showStack(chip8.stack);
             gui_debugger.showKeypad(chip8.keypad);
+            gui_debugger.showDisassembly(chip8.PC, chip8.RAM, chip8.rom_size);
 
             static MemoryEditor mem_edit;
             mem_edit.HighlightMin = chip8.PC;

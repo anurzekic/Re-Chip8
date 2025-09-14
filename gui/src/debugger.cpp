@@ -153,9 +153,11 @@ void Debugger::showProgramCounter(uint16_t& PC, std::array<uint8_t, 4096>& RAM) 
     }
 
     float row_height = 25.0f;
-    if (ImGui::BeginTable("KeypadTable", 3, ImGuiTableFlags_Borders)) {
+    static ImGuiTableFlags flags = ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV | ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable;
+    if (ImGui::BeginTable("KeypadTable", 3, flags)) {
         ImGui::TableNextRow(ImGuiTableRowFlags_None, row_height);
         
+        // TODO Add functionality
         ImGui::TableSetColumnIndex(0);
         if (ImGui::Button("Run")) {
 
@@ -183,24 +185,28 @@ void Debugger::showProgramCounter(uint16_t& PC, std::array<uint8_t, 4096>& RAM) 
         ImGui::Text("PC: %03X", PC);
 
         ImGui::TableSetColumnIndex(2);
-
         if (ImGui::Button("+1")) PC += 2;
         ImGui::SameLine();
         if (ImGui::Button("+2")) PC += 4;
 
 
         ImGui::TableNextRow(ImGuiTableRowFlags_None, row_height);
+
         if (PC + 1 < RAM.size()) {
             uint16_t opcode = (RAM[PC] << 8) | RAM[PC + 1];
+            
             ImGui::TableSetColumnIndex(0);
             ImGui::Text("Instruction:");
+
             ImGui::TableSetColumnIndex(1);
             ImGui::Text("%04X", opcode);
+            
             ImGui::TableSetColumnIndex(2);
             ImGui::Text("%s", disassemble(opcode).c_str());
         } else {
             ImGui::TableSetColumnIndex(0);
             ImGui::Text("Instruction:");
+
             ImGui::TableSetColumnIndex(1);
             ImGui::Text("<out of range>");
         }
@@ -263,3 +269,57 @@ void Debugger::showKeypad(std::array<bool, 16>& keypad) {
     ImGui::End();
 }
 
+void Debugger::showDisassembly(const uint16_t& PC, const std::array<uint8_t, 4096>& RAM, long rom_size) {
+    if (!ImGui::Begin("Disassembly")) {
+        ImGui::End();
+        return;
+    }
+    static ImGuiTableFlags flags = ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV | ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable;
+
+    if (ImGui::BeginTable("DissasemblyTable", 3, flags)) {
+        ImGui::TableSetupScrollFreeze(0, 1); // Make top row always visible
+        ImGui::TableSetupColumn("Address", ImGuiTableColumnFlags_None);
+        ImGui::TableSetupColumn("Hex", ImGuiTableColumnFlags_None);
+        ImGui::TableSetupColumn("Instruction", ImGuiTableColumnFlags_None);
+        ImGui::TableHeadersRow();
+
+        // Demonstrate using clipper for large vertical lists
+        ImGuiListClipper clipper;
+        clipper.Begin(rom_size);
+        bool stop = false;
+        while (clipper.Step())
+        {
+            for (int row = clipper.DisplayStart; row < clipper.DisplayEnd; row++)
+            {
+                int value = PC + (row * 2);
+                if (value >= RAM.size()) {
+                    stop = true;
+                    break;
+                }
+
+                uint16_t opcode = (RAM[value] << 8) | RAM[value + 1];
+                if (opcode == 0) {
+                    stop = true;
+                    break;
+                }
+
+                ImGui::TableNextRow();
+                ImGui::TableSetColumnIndex(0);
+                ImGui::Text("%03X", value);
+            
+                ImGui::TableSetColumnIndex(1);
+                ImGui::Text("%04X", opcode);
+                
+                ImGui::TableSetColumnIndex(2);
+                ImGui::Text("%s", disassemble(opcode).c_str());
+            }
+
+            if (stop) 
+                break;
+        }
+
+        ImGui::EndTable();
+    }
+
+    ImGui::End();
+}

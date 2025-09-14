@@ -52,8 +52,9 @@ bool Chip8::init() {
         rom.seekg(0, std::ios::beg);
         rom.read(reinterpret_cast<char*>(RAM.data() + 0x200), size);
         rom.close();
-
-        SDL_Log("ROM loaded into memory (size: %ld bytes).", static_cast<long>(size));
+        
+        rom_size = static_cast<long>(size);
+        SDL_Log("ROM loaded into memory (size: %ld bytes).", rom_size);
     } else {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to load ROM file into memory.");
         return false;

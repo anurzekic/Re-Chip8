@@ -46,7 +46,7 @@ public:
     uint16_t PC;
 
     std::vector<uint16_t> stack;
-
+    long rom_size;
 private:    
     bool waiting_for_key_release;
     std::map<SDL_Scancode, uint8_t> key_bindings;
