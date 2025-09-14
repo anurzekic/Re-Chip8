@@ -126,7 +126,7 @@ bool Chip8::loadRom(const char *path) {
     return true;
 }
 
-void Chip8::run() {
+void Chip8::step() {
     for (size_t i = 0; i < INSTRUCTIONS_PER_FRAME; i++) {
         // Fetch and execute instructions
         uint16_t instruction = RAM[PC] << 8 | RAM[PC + 1];

@@ -79,7 +79,7 @@ int main(int argc, char **argv) {
             }
 
             if (!chip8.is_paused) {
-                chip8.run();
+                chip8.step();
                 if (chip8.draw_to_screen) {
                     display_renderer.renderDisplay(chip8.display);
                     chip8.draw_to_screen = false;
@@ -103,7 +103,6 @@ int main(int argc, char **argv) {
             gui_debugger.showStack(chip8.stack);
             gui_debugger.showKeypad(chip8.keypad);
 
-            // TODO Add highlighting of current instruction
             static MemoryEditor mem_edit;
             mem_edit.HighlightMin = chip8.PC;
             mem_edit.HighlightMax = chip8.PC + 1;

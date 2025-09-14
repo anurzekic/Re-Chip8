@@ -146,45 +146,67 @@ std::string Debugger::disassemble(uint16_t opcode) {
     }
 }
 
-void TextCentered(std::string text) {
-    auto windowWidth = ImGui::GetWindowSize().x;
-    auto textWidth   = ImGui::CalcTextSize(text.c_str()).x;
-
-    ImGui::SetCursorPosX((windowWidth - textWidth) * 0.5f);
-    ImGui::Text(text.c_str());
-}
-
 void Debugger::showProgramCounter(uint16_t& PC, std::array<uint8_t, 4096>& RAM) {
     if (!ImGui::Begin("Program Counter")) {
         ImGui::End();
         return;
     }
 
-    ImGui::Columns(3, nullptr, false);
+    float row_height = 25.0f;
+    if (ImGui::BeginTable("KeypadTable", 3, ImGuiTableFlags_Borders)) {
+        ImGui::TableNextRow(ImGuiTableRowFlags_None, row_height);
+        
+        ImGui::TableSetColumnIndex(0);
+        if (ImGui::Button("Run")) {
 
-    if (ImGui::Button("-2")) PC = (PC >= 4) ? PC - 4 : 0x200;
-    if (ImGui::Button("-1")) PC = (PC >= 2) ? PC - 2 : 0x200;
+        }
 
-    ImGui::NextColumn(); // move to center column
+        ImGui::TableSetColumnIndex(1);
+        if (ImGui::Button("Pause")) {
 
-    auto columnWidth = ImGui::GetColumnWidth();
-    if (PC + 1 < RAM.size()) {
+        } 
+
+        ImGui::TableSetColumnIndex(2);
+        if (ImGui::Button("Step")) {
+            
+        } 
+
+        ImGui::TableNextRow(ImGuiTableRowFlags_None, row_height);
+
+        ImGui::TableSetColumnIndex(0);
+        if (ImGui::Button("-2")) PC = (PC >= 4) ? PC - 4 : 0x200;
+        ImGui::SameLine();
+        if (ImGui::Button("-1")) PC = (PC >= 2) ? PC - 2 : 0x200;
+
+        ImGui::TableSetColumnIndex(1);
         uint16_t opcode = (RAM[PC] << 8) | RAM[PC + 1];
         ImGui::Text("PC: %03X", PC);
-        TextCentered("Instruction:");
-        ImGui::Text("%04X (%s)", opcode, disassemble(opcode).c_str());
-    } else {
-        ImGui::Text("PC: %03X", PC);
-        ImGui::Text("Instruction:");
-        ImGui::Text("<out of range>");
+
+        ImGui::TableSetColumnIndex(2);
+
+        if (ImGui::Button("+1")) PC += 2;
+        ImGui::SameLine();
+        if (ImGui::Button("+2")) PC += 4;
+
+
+        ImGui::TableNextRow(ImGuiTableRowFlags_None, row_height);
+        if (PC + 1 < RAM.size()) {
+            uint16_t opcode = (RAM[PC] << 8) | RAM[PC + 1];
+            ImGui::TableSetColumnIndex(0);
+            ImGui::Text("Instruction:");
+            ImGui::TableSetColumnIndex(1);
+            ImGui::Text("%04X", opcode);
+            ImGui::TableSetColumnIndex(2);
+            ImGui::Text("%s", disassemble(opcode).c_str());
+        } else {
+            ImGui::TableSetColumnIndex(0);
+            ImGui::Text("Instruction:");
+            ImGui::TableSetColumnIndex(1);
+            ImGui::Text("<out of range>");
+        }
+
+        ImGui::EndTable();
     }
-
-    ImGui::NextColumn(); // move to right column
-
-    if (ImGui::Button("+1")) PC += 2;
-    if (ImGui::Button("+2")) PC += 4;
-
-    ImGui::Columns(1); // reset columns
 
     ImGui::End();
 }
@@ -234,6 +256,7 @@ void Debugger::showKeypad(std::array<bool, 16>& keypad) {
 
             ImGui::PopID();
         }
+
         ImGui::EndTable();
     }
 
