@@ -274,8 +274,14 @@ void Debugger::showDisassembly(const uint16_t& PC, const std::array<uint8_t, 409
         ImGui::End();
         return;
     }
-    static ImGuiTableFlags flags = ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV | ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable;
+    
+    static bool follow_pc = true;
+    ImGui::BeginChild("DisassemblyToolbar", ImVec2(0, 20), ImGuiChildFlags_None, ImGuiWindowFlags_NoScrollbar);
+    ImGui::Checkbox("Follow PC", &follow_pc);
+    ImGui::EndChild();
 
+    static ImGuiTableFlags flags = ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV | ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable;
+    ImGui::BeginChild("DisassemblyContent", ImVec2(0, 0), true);
     if (ImGui::BeginTable("DissasemblyTable", 3, flags)) {
         ImGui::TableSetupScrollFreeze(0, 1); // Make top row always visible
         ImGui::TableSetupColumn("Address", ImGuiTableColumnFlags_None);
@@ -283,43 +289,35 @@ void Debugger::showDisassembly(const uint16_t& PC, const std::array<uint8_t, 409
         ImGui::TableSetupColumn("Instruction", ImGuiTableColumnFlags_None);
         ImGui::TableHeadersRow();
 
-        // Demonstrate using clipper for large vertical lists
-        ImGuiListClipper clipper;
-        clipper.Begin(rom_size);
-        bool stop = false;
-        while (clipper.Step())
-        {
-            for (int row = clipper.DisplayStart; row < clipper.DisplayEnd; row++)
-            {
-                int value = PC + (row * 2);
-                if (value >= RAM.size()) {
-                    stop = true;
-                    break;
-                }
+        for (int row = 0; row < rom_size / 2; row++) {
+            int index = 0x200 + row * 2;
+            if (index + 1 >= RAM.size())
+                break;
 
-                uint16_t opcode = (RAM[value] << 8) | RAM[value + 1];
-                if (opcode == 0) {
-                    stop = true;
-                    break;
-                }
+            uint16_t opcode = (RAM[index] << 8) | RAM[index + 1];
 
-                ImGui::TableNextRow();
-                ImGui::TableSetColumnIndex(0);
-                ImGui::Text("%03X", value);
-            
-                ImGui::TableSetColumnIndex(1);
-                ImGui::Text("%04X", opcode);
+            ImGui::TableNextRow();
+            if (index == PC) {
+                ImU32 color = ImGui::ColorConvertFloat4ToU32(ImVec4(1.0f, 0.2f, 0.2f, 1.0f));
+                ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, color); 
                 
-                ImGui::TableSetColumnIndex(2);
-                ImGui::Text("%s", disassemble(opcode).c_str());
+                if (follow_pc)
+                    ImGui::SetScrollHereY(0.5f);
             }
 
-            if (stop) 
-                break;
+            ImGui::TableSetColumnIndex(0);
+            ImGui::Text("%03X", index);
+        
+            ImGui::TableSetColumnIndex(1);
+            ImGui::Text("%04X", opcode);
+            
+            ImGui::TableSetColumnIndex(2);
+            ImGui::Text("%s", disassemble(opcode).c_str());
         }
 
         ImGui::EndTable();
     }
+    ImGui::EndChild();
 
     ImGui::End();
 }
