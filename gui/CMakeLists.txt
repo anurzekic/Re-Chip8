@@ -19,4 +19,5 @@ target_link_libraries(
     gui
     PRIVATE 
     imgui  # imgui target is available from top-level
+    chip8
 )

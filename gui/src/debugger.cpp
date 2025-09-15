@@ -146,7 +146,7 @@ std::string Debugger::disassemble(uint16_t opcode) {
     }
 }
 
-void Debugger::showProgramCounter(uint16_t& PC, std::array<uint8_t, 4096>& RAM) {
+void Debugger::showProgramCounter(uint16_t& PC, const std::array<uint8_t, 4096>& RAM, Chip8& chip8) {
     if (!ImGui::Begin("Program Counter")) {
         ImGui::End();
         return;
@@ -157,20 +157,19 @@ void Debugger::showProgramCounter(uint16_t& PC, std::array<uint8_t, 4096>& RAM) 
     if (ImGui::BeginTable("KeypadTable", 3, flags)) {
         ImGui::TableNextRow(ImGuiTableRowFlags_None, row_height);
         
-        // TODO Add functionality
         ImGui::TableSetColumnIndex(0);
         if (ImGui::Button("Run")) {
-
+            chip8.is_paused = false; // Toggle pause state
         }
 
         ImGui::TableSetColumnIndex(1);
         if (ImGui::Button("Pause")) {
-
+            chip8.is_paused = true; // Toggle pause state
         } 
 
         ImGui::TableSetColumnIndex(2);
         if (ImGui::Button("Step")) {
-            
+            chip8.step();
         } 
 
         ImGui::TableNextRow(ImGuiTableRowFlags_None, row_height);

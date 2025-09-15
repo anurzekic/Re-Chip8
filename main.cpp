@@ -99,7 +99,7 @@ int main(int argc, char **argv) {
             
             gui_debugger.showRegisters(chip8.V);
             gui_debugger.showTimers(chip8.PC, chip8.I, chip8.delay_timer, chip8.sound_timer);
-            gui_debugger.showProgramCounter(chip8.PC, chip8.RAM);
+            gui_debugger.showProgramCounter(chip8.PC, chip8.RAM, chip8);
             gui_debugger.showStack(chip8.stack);
             gui_debugger.showKeypad(chip8.keypad);
             gui_debugger.showDisassembly(chip8.PC, chip8.RAM, chip8.rom_size);

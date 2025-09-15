@@ -1,6 +1,7 @@
 #pragma once
 
 #include "imgui.h"
+#include "chip8/chip8.hpp"
 
 #include <array>
 #include <cstdint>
@@ -15,7 +16,7 @@ public:
 
     void showRegisters(std::array<uint8_t, 16>& registers);
     void showTimers(uint16_t& PC, uint16_t& I, uint8_t& delay_timer, uint8_t& sound_timer);
-    void showProgramCounter(uint16_t& PC, std::array<uint8_t, 4096>& RAM);
+    void showProgramCounter(uint16_t& PC, const std::array<uint8_t, 4096>& RAM, Chip8& chip8);
     void showStack(std::vector<uint16_t>& stack);
     void showKeypad(std::array<bool, 16>& keypad);
     void showDisassembly(const uint16_t& PC, const std::array<uint8_t, 4096>& RAM, long rom_size);
