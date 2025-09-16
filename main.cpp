@@ -22,20 +22,20 @@ int main(int argc, char **argv) {
 
     if (!SDL_InitSubSystem(SDL_INIT_VIDEO | SDL_INIT_AUDIO) ) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "SDL_InitSubSystem failed: %s", SDL_GetError());
-        return false;
+        return 1;
     }
 
     float main_scale = SDL_GetDisplayContentScale(SDL_GetPrimaryDisplay());
     SDL_Window *window = SDL_CreateWindow("Re:Chip-8", 1280*main_scale, 720*main_scale, SDL_WINDOW_HIGH_PIXEL_DENSITY);
     if (!window) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to create SDL window: %s", SDL_GetError());
-        return false;
+        return 1;
     }
 
     SDL_Renderer *renderer = SDL_CreateRenderer(window, NULL);
     if (!renderer) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to create SDL renderer: %s", SDL_GetError());
-        return false;
+        return 1;
     }
 
     // ImGui Setup
@@ -57,6 +57,9 @@ int main(int argc, char **argv) {
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
     Renderer display_renderer(*renderer);
+    SDL_Texture* chip8_texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, 64, 32);
+    SDL_SetTextureScaleMode(chip8_texture, SDL_SCALEMODE_NEAREST);
+    
     InputHandler input_handler;
 
     Chip8 chip8;
@@ -70,6 +73,10 @@ int main(int argc, char **argv) {
         Timer<FPS> fps_cap_timer;
 
         while (chip8.is_running) {
+            ImGui_ImplSDLRenderer3_NewFrame();
+            ImGui_ImplSDL3_NewFrame();
+            ImGui::NewFrame();
+
             SDL_Event event;        
             while (SDL_PollEvent(&event)) {                 
                 ImGui_ImplSDL3_ProcessEvent(&event);
@@ -80,8 +87,26 @@ int main(int argc, char **argv) {
             if (!chip8.is_paused) {
                 chip8.step();
                 if (chip8.draw_to_screen) {
-                    display_renderer.renderDisplay(chip8.display);
-                    chip8.draw_to_screen = false;
+                    display_renderer.updateTexture(chip8.display, chip8_texture);
+                    // Draw Chip-8 display in ImGui dynamically
+                    if (ImGui::Begin("Chip-8 Display")) {
+                        ImVec2 avail_size = ImGui::GetContentRegionAvail();
+
+                        // Maintain 2:1 ratio (64x32)
+                        float aspect_ratio = 64.0f / 32.0f;
+                        ImVec2 image_size = avail_size;
+                        if (image_size.x / image_size.y > aspect_ratio) {
+                            image_size.x = image_size.y * aspect_ratio;
+                        } else {
+                            image_size.y = image_size.x / aspect_ratio;
+                        }
+
+                        ImGui::Image((void*)chip8_texture, image_size);
+                    }
+                    ImGui::End();
+
+                    // display_renderer.renderDisplay(chip8.display);
+                    // chip8.draw_to_screen = false;
                 }
 
                 if (chip8.play_sound) {
@@ -90,12 +115,7 @@ int main(int argc, char **argv) {
                     sound_manager.stopSound();
                 }
             }
-            ImGui_ImplSDLRenderer3_NewFrame();
-            ImGui_ImplSDL3_NewFrame();
-            ImGui::NewFrame();
 
-            // ImGui::ShowDemoWindow(&show_demo_window);
-            
             gui_debugger.showRegisters(chip8.V);
             gui_debugger.showTimers(chip8.PC, chip8.I, chip8.delay_timer, chip8.sound_timer);
             gui_debugger.showProgramCounter(chip8.PC, chip8.RAM, chip8);
@@ -108,6 +128,8 @@ int main(int argc, char **argv) {
             mem_edit.HighlightMax = chip8.PC + 1;
             mem_edit.HighlightColor = ImGui::ColorConvertFloat4ToU32(ImVec4(1.0f, 0.2f, 0.2f, 1.0f));
             mem_edit.DrawWindow("RAM", chip8.RAM.data(), sizeof(chip8.RAM));
+
+            display_renderer.clearWindow();
 
             ImGui::Render();
             ImGui_ImplSDLRenderer3_RenderDrawData(ImGui::GetDrawData(), renderer);
