@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_subdirectory(chip8)
-add_subdirectory(externals/imgui)  # Only here
+add_subdirectory(externals)
 add_subdirectory(gui)
 
 add_executable(chip8_emulator main.cpp)
@@ -13,7 +13,7 @@ add_executable(chip8_emulator main.cpp)
 target_link_libraries(chip8_emulator PRIVATE chip8 imgui gui)
 
 add_library(compiler_flags INTERFACE)
-target_compile_features(compiler_flags INTERFACE cxx_std_11)
+target_compile_features(compiler_flags INTERFACE cxx_std_17)
 
 set(gcc_like_cxx "$<COMPILE_LANG_AND_ID:CXX,ARMClang,AppleClang,Clang,GNU,LCC>")
 set(msvc_cxx "$<COMPILE_LANG_AND_ID:CXX,MSVC>")

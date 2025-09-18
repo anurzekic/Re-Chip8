@@ -8,7 +8,7 @@
 #include "imgui.h"
 #include "backends/imgui_impl_sdl3.h"
 #include "backends/imgui_impl_sdlrenderer3.h"
-#include "imgui_club/imgui_memory_editor.h"
+#include "imgui_memory_editor.h"
 
 #include <iostream>
 #include <filesystem>
