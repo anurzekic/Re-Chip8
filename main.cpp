@@ -27,11 +27,17 @@ int main(int argc, char **argv) {
     }
 
     float main_scale = SDL_GetDisplayContentScale(SDL_GetPrimaryDisplay());
-    SDL_Window *window = SDL_CreateWindow("Re:Chip-8", 1280*main_scale, 720*main_scale, SDL_WINDOW_HIGH_PIXEL_DENSITY);
+    SDL_Window *window = SDL_CreateWindow("Re:Chip-8", 1280*main_scale, 720*main_scale, SDL_WINDOW_HIGH_PIXEL_DENSITY | SDL_WINDOW_RESIZABLE);
     if (!window) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to create SDL window: %s", SDL_GetError());
         return 1;
     }
+
+    SDL_SetWindowFullscreen(window, false);
+    // TODO Needs to be tested on windows
+    // Explicitly set the initial size again (some platforms need this)
+    // SDL_SetWindowSize(window, 1280 * main_scale, 720 * main_scale);
+    // SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);    
 
     SDL_Renderer *renderer = SDL_CreateRenderer(window, NULL);
     if (!renderer) {
