@@ -137,6 +137,27 @@ int main(int argc, char **argv) {
             // This must come AFTER the DockBuilder setup
             ImGui::DockSpaceOverViewport(ImGui::GetMainViewport()->ID);
 
+            if (ImGui::BeginMainMenuBar()) {
+                if (ImGui::BeginMenu("File")) {
+                    if (ImGui::MenuItem("Load ROM")) {
+
+                    } else if (ImGui::MenuItem("Reload ROM")) {
+
+                    } else if (ImGui::MenuItem("Exit")) {
+                        
+                    }
+
+                    ImGui::EndMenu();
+                }
+
+                if (ImGui::BeginMenu("View")) {
+                    ImGui::MenuItem("Reset Layout");
+                    ImGui::EndMenu();
+                }
+
+                ImGui::EndMainMenuBar();
+            }
+
             SDL_Event event;        
             while (SDL_PollEvent(&event)) {                 
                 ImGui_ImplSDL3_ProcessEvent(&event);
