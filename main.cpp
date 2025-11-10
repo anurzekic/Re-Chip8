@@ -6,6 +6,7 @@
 #include "gui/debugger.hpp"
 
 #include "imgui.h"
+#include "imgui_internal.h"
 #include "backends/imgui_impl_sdl3.h"
 #include "backends/imgui_impl_sdlrenderer3.h"
 #include "imgui_memory_editor.h"
@@ -41,7 +42,10 @@ int main(int argc, char **argv) {
     // ImGui Setup
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
-    
+    ImGuiIO &io = ImGui::GetIO();
+
+    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+
     // Style
     ImGui::StyleColorsDark();
     
@@ -72,10 +76,60 @@ int main(int argc, char **argv) {
         SoundManager sound_manager;
         Timer<FPS> fps_cap_timer;
 
+        bool dockspace_initialized = false;
+
         while (chip8.is_running) {
             ImGui_ImplSDLRenderer3_NewFrame();
             ImGui_ImplSDL3_NewFrame();
             ImGui::NewFrame();
+
+            if (!dockspace_initialized) {
+                using namespace ImGui;
+                dockspace_initialized = true;
+                ImGuiID dockspace_id = ImGui::GetMainViewport()->ID;
+
+                ImGui::DockBuilderRemoveNode(dockspace_id); // clear previous layout
+                ImGui::DockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_None);
+                ImGui::DockBuilderSetNodeSize(dockspace_id, ImGui::GetMainViewport()->Size);
+
+                // Split the main dockspace into regions
+                ImGuiID dock_main_id = dockspace_id;
+                ImGuiID dock_id_left, dock_id_right, dock_id_bottom;
+                dock_id_left = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Left, 0.22f, nullptr, &dock_main_id);
+                dock_id_right = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Right, 0.35f, nullptr, &dock_main_id);
+                dock_id_bottom = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Down, 0.45f, nullptr, &dock_main_id);
+
+                // --- RIGHT SIDE (split vertically for each window) ---
+                ImGuiID right_top = dock_id_right;
+                ImGuiID right_middle, right_bottom;
+                right_middle = ImGui::DockBuilderSplitNode(right_top, ImGuiDir_Down, 0.41f, nullptr, &right_top);
+                right_bottom = ImGui::DockBuilderSplitNode(right_middle, ImGuiDir_Down, 0.62f, nullptr, &right_middle);
+
+                ImGui::DockBuilderDockWindow("Registers", right_top);
+                ImGui::DockBuilderDockWindow("Program Counter", right_middle);
+                ImGui::DockBuilderDockWindow("Keypad", right_bottom);
+
+                // --- LEFT SIDE ---
+                ImGuiID left_top = dock_id_left;
+                ImGuiID left_middle, left_bottom;
+                left_middle = ImGui::DockBuilderSplitNode(left_top, ImGuiDir_Down, 0.83f, nullptr, &left_top);
+                left_bottom = ImGui::DockBuilderSplitNode(left_middle, ImGuiDir_Down, 0.71f, nullptr, &left_middle);
+                
+                ImGui::DockBuilderDockWindow("Special Registers", left_top);
+                ImGui::DockBuilderDockWindow("Stack", left_middle);
+                ImGui::DockBuilderDockWindow("Disassembly", left_bottom);
+
+                // --- CENTER ---
+                ImGui::DockBuilderDockWindow("Chip-8 Display", dock_main_id);
+
+                // --- BOTTOM ---
+                ImGui::DockBuilderDockWindow("RAM", dock_id_bottom);
+
+                ImGui::DockBuilderFinish(dockspace_id);
+            }
+
+            // This must come AFTER the DockBuilder setup
+            ImGui::DockSpaceOverViewport(ImGui::GetMainViewport()->ID);
 
             SDL_Event event;        
             while (SDL_PollEvent(&event)) {                 
@@ -84,36 +138,30 @@ int main(int argc, char **argv) {
                 input_handler.handleInput(event, chip8);
             }
 
+            // Always show the window
+            if (ImGui::Begin("Chip-8 Display")) {
+                ImVec2 avail_size = ImGui::GetContentRegionAvail();
+                float aspect_ratio = 64.0f / 32.0f;
+                ImVec2 image_size = avail_size;
+                if (image_size.x / image_size.y > aspect_ratio)
+                    image_size.x = image_size.y * aspect_ratio;
+                else
+                    image_size.y = image_size.x / aspect_ratio;
+
+                ImGui::Image((void*)chip8_texture, image_size);
+            }
+            ImGui::End();
+
             if (!chip8.is_paused) {
                 chip8.step();
                 if (chip8.draw_to_screen) {
                     display_renderer.updateTexture(chip8.display, chip8_texture);
-                    // Draw Chip-8 display in ImGui dynamically
-                    if (ImGui::Begin("Chip-8 Display")) {
-                        ImVec2 avail_size = ImGui::GetContentRegionAvail();
-
-                        // Maintain 2:1 ratio (64x32)
-                        float aspect_ratio = 64.0f / 32.0f;
-                        ImVec2 image_size = avail_size;
-                        if (image_size.x / image_size.y > aspect_ratio) {
-                            image_size.x = image_size.y * aspect_ratio;
-                        } else {
-                            image_size.y = image_size.x / aspect_ratio;
-                        }
-
-                        ImGui::Image((void*)chip8_texture, image_size);
-                    }
-                    ImGui::End();
-
-                    // display_renderer.renderDisplay(chip8.display);
-                    // chip8.draw_to_screen = false;
                 }
 
-                if (chip8.play_sound) {
+                if (chip8.play_sound)
                     sound_manager.playSound();
-                } else {
+                else
                     sound_manager.stopSound();
-                }
             }
 
             gui_debugger.showRegisters(chip8.V);
