@@ -146,6 +146,26 @@ void Chip8::step() {
     }
 }
 
+void Chip8::resetState() {
+    RAM.fill(0);
+    V.fill(0);
+    stack.clear();
+    display.fill({});
+    keypad.fill(0);
+    draw_to_screen = false;
+    play_sound = false;
+    I = 0;
+    delay_timer = 0;
+    sound_timer = 0;
+    PC = 0x200;
+    rom_size = 0;
+}
+
+bool Chip8::resetStateAndLoadRom(const char *path) {
+    resetState();
+    return loadRom(path) && init();
+}
+
 void Chip8::executeInstruction(uint16_t instruction) {
     uint8_t first_nibble = instruction >> 12;
 

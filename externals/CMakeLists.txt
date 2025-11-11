@@ -11,6 +11,7 @@ target_include_directories(imgui PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}/imgui"
     "${CMAKE_CURRENT_SOURCE_DIR}/imgui/backends"
     "${CMAKE_CURRENT_SOURCE_DIR}/imgui_club"
+    "${CMAKE_CURRENT_SOURCE_DIR}/imgui_filebrowser"
 )
 
 target_compile_features(imgui PUBLIC cxx_std_17)

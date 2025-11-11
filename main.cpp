@@ -10,9 +10,54 @@
 #include "backends/imgui_impl_sdl3.h"
 #include "backends/imgui_impl_sdlrenderer3.h"
 #include "imgui_memory_editor.h"
+#include "imfilebrowser.h"
 
 #include <iostream>
 #include <filesystem>
+
+void initializeDockspace() {
+    using namespace ImGui;
+    ImGuiID dockspace_id = ImGui::GetMainViewport()->ID;
+
+    ImGui::DockBuilderRemoveNode(dockspace_id); // clear previous layout
+    ImGui::DockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_None);
+    ImGui::DockBuilderSetNodeSize(dockspace_id, ImGui::GetMainViewport()->Size);
+
+    // Split the main dockspace into regions
+    ImGuiID dock_main_id = dockspace_id;
+    ImGuiID dock_id_left, dock_id_right, dock_id_bottom;
+    dock_id_left = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Left, 0.22f, nullptr, &dock_main_id);
+    dock_id_right = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Right, 0.35f, nullptr, &dock_main_id);
+    dock_id_bottom = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Down, 0.45f, nullptr, &dock_main_id);
+
+    // --- RIGHT SIDE (split vertically for each window) ---
+    ImGuiID right_top = dock_id_right;
+    ImGuiID right_middle, right_bottom;
+    right_middle = ImGui::DockBuilderSplitNode(right_top, ImGuiDir_Down, 0.41f, nullptr, &right_top);
+    right_bottom = ImGui::DockBuilderSplitNode(right_middle, ImGuiDir_Down, 0.62f, nullptr, &right_middle);
+
+    ImGui::DockBuilderDockWindow("Registers", right_top);
+    ImGui::DockBuilderDockWindow("Program Counter", right_middle);
+    ImGui::DockBuilderDockWindow("Keypad", right_bottom);
+
+    // --- LEFT SIDE ---
+    ImGuiID left_top = dock_id_left;
+    ImGuiID left_middle, left_bottom;
+    left_middle = ImGui::DockBuilderSplitNode(left_top, ImGuiDir_Down, 0.83f, nullptr, &left_top);
+    left_bottom = ImGui::DockBuilderSplitNode(left_middle, ImGuiDir_Down, 0.71f, nullptr, &left_middle);
+    
+    ImGui::DockBuilderDockWindow("Special Registers", left_top);
+    ImGui::DockBuilderDockWindow("Stack", left_middle);
+    ImGui::DockBuilderDockWindow("Disassembly", left_bottom);
+
+    // --- CENTER ---
+    ImGui::DockBuilderDockWindow("Chip-8 Display", dock_main_id);
+
+    // --- BOTTOM ---
+    ImGui::DockBuilderDockWindow("RAM", dock_id_bottom);
+
+    ImGui::DockBuilderFinish(dockspace_id);
+}
 
 int main(int argc, char **argv) {
     if (argc != 2) {
@@ -44,6 +89,8 @@ int main(int argc, char **argv) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to create SDL renderer: %s", SDL_GetError());
         return 1;
     }
+
+    std::string rom_path = argv[1];
 
     // ImGui Setup
     IMGUI_CHECKVERSION();
@@ -84,54 +131,18 @@ int main(int argc, char **argv) {
 
         bool dockspace_initialized = false;
 
+        ImGui::FileBrowser fileDialog;
+        fileDialog.SetTitle("Select ROM");
+        fileDialog.SetTypeFilters({".ch8"});
+
         while (chip8.is_running) {
             ImGui_ImplSDLRenderer3_NewFrame();
             ImGui_ImplSDL3_NewFrame();
             ImGui::NewFrame();
 
             if (!dockspace_initialized) {
-                using namespace ImGui;
                 dockspace_initialized = true;
-                ImGuiID dockspace_id = ImGui::GetMainViewport()->ID;
-
-                ImGui::DockBuilderRemoveNode(dockspace_id); // clear previous layout
-                ImGui::DockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_None);
-                ImGui::DockBuilderSetNodeSize(dockspace_id, ImGui::GetMainViewport()->Size);
-
-                // Split the main dockspace into regions
-                ImGuiID dock_main_id = dockspace_id;
-                ImGuiID dock_id_left, dock_id_right, dock_id_bottom;
-                dock_id_left = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Left, 0.22f, nullptr, &dock_main_id);
-                dock_id_right = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Right, 0.35f, nullptr, &dock_main_id);
-                dock_id_bottom = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Down, 0.45f, nullptr, &dock_main_id);
-
-                // --- RIGHT SIDE (split vertically for each window) ---
-                ImGuiID right_top = dock_id_right;
-                ImGuiID right_middle, right_bottom;
-                right_middle = ImGui::DockBuilderSplitNode(right_top, ImGuiDir_Down, 0.41f, nullptr, &right_top);
-                right_bottom = ImGui::DockBuilderSplitNode(right_middle, ImGuiDir_Down, 0.62f, nullptr, &right_middle);
-
-                ImGui::DockBuilderDockWindow("Registers", right_top);
-                ImGui::DockBuilderDockWindow("Program Counter", right_middle);
-                ImGui::DockBuilderDockWindow("Keypad", right_bottom);
-
-                // --- LEFT SIDE ---
-                ImGuiID left_top = dock_id_left;
-                ImGuiID left_middle, left_bottom;
-                left_middle = ImGui::DockBuilderSplitNode(left_top, ImGuiDir_Down, 0.83f, nullptr, &left_top);
-                left_bottom = ImGui::DockBuilderSplitNode(left_middle, ImGuiDir_Down, 0.71f, nullptr, &left_middle);
-                
-                ImGui::DockBuilderDockWindow("Special Registers", left_top);
-                ImGui::DockBuilderDockWindow("Stack", left_middle);
-                ImGui::DockBuilderDockWindow("Disassembly", left_bottom);
-
-                // --- CENTER ---
-                ImGui::DockBuilderDockWindow("Chip-8 Display", dock_main_id);
-
-                // --- BOTTOM ---
-                ImGui::DockBuilderDockWindow("RAM", dock_id_bottom);
-
-                ImGui::DockBuilderFinish(dockspace_id);
+                initializeDockspace();
             }
 
             // This must come AFTER the DockBuilder setup
@@ -140,18 +151,30 @@ int main(int argc, char **argv) {
             if (ImGui::BeginMainMenuBar()) {
                 if (ImGui::BeginMenu("File")) {
                     if (ImGui::MenuItem("Load ROM")) {
-
+                        fileDialog.Open();
                     } else if (ImGui::MenuItem("Reload ROM")) {
-
+                        if (!chip8.resetStateAndLoadRom(rom_path.c_str()))
+                            return 1;
                     } else if (ImGui::MenuItem("Exit")) {
-                        
+                        chip8.is_running = false;
                     }
 
                     ImGui::EndMenu();
                 }
+                fileDialog.Display();
+                if(fileDialog.HasSelected())
+                {
+                    std::cout << "Selected filename" << fileDialog.GetSelected().string() << std::endl;
+                    rom_path = fileDialog.GetSelected().string();
+                    if (!chip8.resetStateAndLoadRom(rom_path.c_str()))
+                        return 1;
+                    fileDialog.ClearSelected();
+                }
 
                 if (ImGui::BeginMenu("View")) {
-                    ImGui::MenuItem("Reset Layout");
+                    if (ImGui::MenuItem("Reset Layout")) {
+                        initializeDockspace();
+                    }
                     ImGui::EndMenu();
                 }
 

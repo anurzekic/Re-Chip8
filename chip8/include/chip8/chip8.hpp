@@ -22,6 +22,8 @@ public:
     bool init();
     bool loadRom(const char *rom_path);
     void step();
+    void resetState();
+    bool resetStateAndLoadRom(const char *path);
 
     std::array<bool, 16> keypad;
     bool is_running;
