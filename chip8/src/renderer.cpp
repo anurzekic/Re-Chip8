@@ -19,7 +19,7 @@ void Renderer::updateTexture(const display_t& display, SDL_Texture* texture) {
     int index = 0;
     for (int y = 0; y < WINDOW_HEIGHT; ++y) {
         for (int x = 0; x < WINDOW_WIDTH; ++x) {
-            pixels[index] = display[y][x] ? 0xFFFFFFFF : 0x00000000;
+            pixels[index] = display[y][x] ? 0xFFFFFFFF : 0x00000000; // TODO Make colors adjustable
             index++;
         }
     }

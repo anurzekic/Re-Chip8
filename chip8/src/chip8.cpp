@@ -4,27 +4,8 @@
 #include <iostream>
 #include <random>
 
-Chip8::Chip8() : 
-    PC(0x200), delay_timer(0), sound_timer(0), display{}, RAM{}, keypad{}, waiting_for_key_release(false), 
-    is_running(true), is_paused(false)
-{
-    background_color.r = 0;
-    background_color.g = 0;
-    background_color.b = 0;
-    background_color.a = 100;
-
-    draw_color.r = 255;
-    draw_color.g = 255;
-    draw_color.b = 255;
-    draw_color.a = 100;
-
-    key_bindings = {
-        {SDL_SCANCODE_1, 0x1}, {SDL_SCANCODE_2, 0x2}, {SDL_SCANCODE_3, 0x3}, {SDL_SCANCODE_4, 0xC},
-        {SDL_SCANCODE_Q, 0x4}, {SDL_SCANCODE_W, 0x5}, {SDL_SCANCODE_E, 0x6}, {SDL_SCANCODE_R, 0xD},
-        {SDL_SCANCODE_A, 0x7}, {SDL_SCANCODE_S, 0x8}, {SDL_SCANCODE_D, 0x9}, {SDL_SCANCODE_F, 0xE},
-        {SDL_SCANCODE_Z, 0xA}, {SDL_SCANCODE_X, 0x0}, {SDL_SCANCODE_C, 0xB}, {SDL_SCANCODE_V, 0xF}
-    };
-}
+Chip8::Chip8() : PC(0x200), delay_timer(0), sound_timer(0), display{}, RAM{}, keypad{}, waiting_for_key_release(false), 
+                is_running(true), is_paused(false), rom_size(0), draw_to_screen(false), play_sound(false) {}
 
 bool Chip8::init() {
     const std::array<uint8_t, 80> font = {        
@@ -63,51 +44,6 @@ bool Chip8::init() {
     return true;
 }
 
-std::string Chip8::get_memory_region_label(std::size_t address) const {
-    if (address < 0x200) return "Reserved / Font";
-    else if (address >= 0x200 && address < 0x600) return "ROM";
-    else if (address >= 0x600 && address < 0xEA0) return "Free / Work RAM";
-    else if (address >= 0xEA0 && address < 0xEFF) return "Reserved (impl.)";
-    else if (address >= 0xF00 && address <= 0xFFF) return "Display Memory";
-    return "";
-}
-
-void Chip8::showRamContent() const {
-    for (size_t i = 0; i < RAM.size(); i += 16) {
-        // Memory region label
-        std::string region = get_memory_region_label(i);
-
-        // Left address
-        std::cout << "0x" << std::setw(3) << std::setfill('0') << std::hex << i << ": ";
-
-        // Hex bytes
-        for (size_t j = 0; j < 16; ++j) {
-            if (i + j < RAM.size()) {
-                uint8_t byte = RAM[i + j];
-
-                if (byte != 0) std::cout << "\033[33m"; // Yellow for non-zero
-                else std::cout << "\033[90m";           // Dim gray for zero
-
-                std::cout << std::setw(2) << static_cast<int>(byte) << " ";
-            } else {
-                std::cout << "   ";
-            }
-        }
-
-        std::cout << "\033[0m"; // Reset color
-
-        // ASCII view
-        std::cout << " | ";
-        for (size_t j = 0; j < 16 && i + j < RAM.size(); ++j) {
-            char c = static_cast<char>(RAM[i + j]);
-            std::cout << (std::isprint(c) ? c : '.');
-        }
-
-        // Region annotation
-        std::cout << "  <-- " << region << '\n';
-    }
-}
-
 bool Chip8::loadRom(const char *path) {
     std::filesystem::path rom_path(path);
 
@@ -129,7 +65,6 @@ bool Chip8::loadRom(const char *path) {
 
 void Chip8::step() {
     for (size_t i = 0; i < INSTRUCTIONS_PER_FRAME; i++) {
-        // Fetch and execute instructions
         uint16_t instruction = RAM[PC] << 8 | RAM[PC + 1];
         PC += 2;
         executeInstruction(instruction);
@@ -174,8 +109,6 @@ void Chip8::executeInstruction(uint16_t instruction) {
     uint8_t kk = instruction & 0x00FF;
     uint8_t x = (instruction & 0x0F00) >> 8;
     uint8_t y = (instruction & 0x00F0) >> 4;
-    
-    // std::cout << "Executing instruction: " << std::hex << instruction << std::endl;
     
     switch (first_nibble)
     {
@@ -337,7 +270,6 @@ void Chip8::instr_set_F(uint16_t instruction, uint8_t x) {
 
 void Chip8::instr_00E0() {
     std::fill(display.begin(), display.end(), std::array<bool, WINDOW_WIDTH>{});
-    // clearWindow();
     draw_to_screen = true;
 }
 
@@ -442,9 +374,9 @@ void Chip8::instr_Bnnn(uint16_t nnn) {
 }
 
 void Chip8::instr_Cxkk(uint8_t x, uint8_t kk) {
-    std::random_device rd; // obtain a random number from hardware
-    std::mt19937 gen(rd()); // seed the generator
-    std::uniform_int_distribution<> distr(0, 255); // define the range
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> distr(0, 255);
 
     V[x] = distr(gen) & kk;
 } 

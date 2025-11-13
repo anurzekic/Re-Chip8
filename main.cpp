@@ -19,18 +19,16 @@ void initializeDockspace() {
     using namespace ImGui;
     ImGuiID dockspace_id = ImGui::GetMainViewport()->ID;
 
-    ImGui::DockBuilderRemoveNode(dockspace_id); // clear previous layout
+    ImGui::DockBuilderRemoveNode(dockspace_id);
     ImGui::DockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_None);
     ImGui::DockBuilderSetNodeSize(dockspace_id, ImGui::GetMainViewport()->Size);
 
-    // Split the main dockspace into regions
     ImGuiID dock_main_id = dockspace_id;
     ImGuiID dock_id_left, dock_id_right, dock_id_bottom;
     dock_id_left = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Left, 0.22f, nullptr, &dock_main_id);
     dock_id_right = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Right, 0.35f, nullptr, &dock_main_id);
     dock_id_bottom = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Down, 0.45f, nullptr, &dock_main_id);
 
-    // --- RIGHT SIDE (split vertically for each window) ---
     ImGuiID right_top = dock_id_right;
     ImGuiID right_middle, right_bottom;
     right_middle = ImGui::DockBuilderSplitNode(right_top, ImGuiDir_Down, 0.41f, nullptr, &right_top);
@@ -40,7 +38,6 @@ void initializeDockspace() {
     ImGui::DockBuilderDockWindow("Program Counter", right_middle);
     ImGui::DockBuilderDockWindow("Keypad", right_bottom);
 
-    // --- LEFT SIDE ---
     ImGuiID left_top = dock_id_left;
     ImGuiID left_middle, left_bottom;
     left_middle = ImGui::DockBuilderSplitNode(left_top, ImGuiDir_Down, 0.83f, nullptr, &left_top);
@@ -50,10 +47,8 @@ void initializeDockspace() {
     ImGui::DockBuilderDockWindow("Stack", left_middle);
     ImGui::DockBuilderDockWindow("Disassembly", left_bottom);
 
-    // --- CENTER ---
     ImGui::DockBuilderDockWindow("Chip-8 Display", dock_main_id);
 
-    // --- BOTTOM ---
     ImGui::DockBuilderDockWindow("RAM", dock_id_bottom);
 
     ImGui::DockBuilderFinish(dockspace_id);
@@ -92,22 +87,18 @@ int main(int argc, char **argv) {
 
     std::string rom_path = argv[1];
 
-    // ImGui Setup
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO &io = ImGui::GetIO();
 
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
-    // Style
     ImGui::StyleColorsDark();
     
-    // Scaling
     ImGuiStyle& style = ImGui::GetStyle();
     style.ScaleAllSizes(main_scale);
     style.FontScaleDpi = main_scale;
 
-    // Setup Platform/Renderer backends
     ImGui_ImplSDL3_InitForSDLRenderer(window, renderer);
     ImGui_ImplSDLRenderer3_Init(renderer);
 
@@ -145,7 +136,6 @@ int main(int argc, char **argv) {
                 initializeDockspace();
             }
 
-            // This must come AFTER the DockBuilder setup
             ImGui::DockSpaceOverViewport(ImGui::GetMainViewport()->ID);
 
             if (ImGui::BeginMainMenuBar()) {
@@ -188,7 +178,6 @@ int main(int argc, char **argv) {
                 input_handler.handleInput(event, chip8);
             }
 
-            // Always show the window
             if (ImGui::Begin("Chip-8 Display")) {
                 ImVec2 avail_size = ImGui::GetContentRegionAvail();
                 float aspect_ratio = 64.0f / 32.0f;
@@ -239,7 +228,6 @@ int main(int argc, char **argv) {
 
     SDL_Log("Exiting...");
 
-    // Clean up
     ImGui_ImplSDLRenderer3_Shutdown();
     ImGui_ImplSDL3_Shutdown();
     ImGui::DestroyContext();

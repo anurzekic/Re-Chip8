@@ -12,18 +12,10 @@ public:
     ~InputHandler();
     InputHandler(const InputHandler&) = default;
 
-    // Handle input events
-    void handleEvents(SDL_Event &event);
-
     void handleInput(const SDL_Event& event, Chip8& chip8);
-
-    bool checkKeyPressed(uint8_t key) const;
-
-    // Set key bindings
-    void setKeyBinding(SDL_Scancode scancode, uint8_t key);
-
+    void setKeyBinding(SDL_Scancode scancode, uint8_t key); // TODO Implement
     bool checkValidKeyPressed(const SDL_Scancode& scancode) const;
-
+    
 private:
     std::map<SDL_Scancode, uint8_t> key_bindings;
 };

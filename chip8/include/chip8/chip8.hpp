@@ -1,7 +1,7 @@
 #pragma once
 
 #include "chip8/timer.hpp"
-// #include "chip8/defines.hpp"
+#include "chip8/types.hpp"
 #include "config.hpp"
 
 #include <array>
@@ -25,17 +25,16 @@ public:
     void resetState();
     bool resetStateAndLoadRom(const char *path);
 
-    std::array<bool, 16> keypad;
+    size_t rom_size;
     bool is_running;
     bool is_paused;
-    bool draw_to_screen = false;
-    bool play_sound = false;
-
-    using display_t = std::array<std::array<bool, WINDOW_WIDTH>, WINDOW_HEIGHT>;
+    bool draw_to_screen;
+    bool play_sound;
 
     display_t display;
-
+    std::array<bool, 16> keypad;
     std::array<uint8_t, 4096> RAM;
+
     // Registers
     std::array<uint8_t, 16> V;
 
@@ -48,26 +47,13 @@ public:
     uint16_t PC;
 
     std::vector<uint16_t> stack;
-    long rom_size;
+
 private:    
-    bool waiting_for_key_release;
-    std::map<SDL_Scancode, uint8_t> key_bindings;
-    struct color {
-        uint8_t r;
-        uint8_t g;
-        uint8_t b;
-        uint8_t a;
-    };
-
-    color background_color;
-    color draw_color;
-    
     std::ifstream rom;
-
-    std::string get_memory_region_label(std::size_t address) const;
-    void showRamContent() const;
+    bool waiting_for_key_release;
 
     void executeInstruction(uint16_t instruction);
+
     // Standard Chip-8 Instructions
     void instr_set_0(uint16_t instruction);
     void instr_00E0();

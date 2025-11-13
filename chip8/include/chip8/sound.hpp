@@ -8,12 +8,9 @@ public:
     ~SoundManager();
     SoundManager(const SoundManager&) = default;
 
-    // Play a sound
     void playSound();
-
-    // Stop the sound
     void stopSound();
-
+    
 private:
     static int current_sine_sample;
     SDL_AudioStream *stream;

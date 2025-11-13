@@ -9,12 +9,11 @@ void Debugger::showRegisters(std::array<uint8_t, 16>& registers) {
     ImVec2 outer_size = ImVec2(0.0f, ImGui::GetTextLineHeightWithSpacing() * 8);
     if (ImGui::BeginTable("Registers", 2, flags, outer_size))
     {
-        ImGui::TableSetupScrollFreeze(0, 1); // Make top row always visible
+        ImGui::TableSetupScrollFreeze(0, 1);
         ImGui::TableSetupColumn("V[x]", ImGuiTableColumnFlags_None);
         ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_None);
         ImGui::TableHeadersRow();
 
-        // Demonstrate using clipper for large vertical lists
         ImGuiListClipper clipper;
         clipper.Begin(registers.size());
         while (clipper.Step())
@@ -23,13 +22,12 @@ void Debugger::showRegisters(std::array<uint8_t, 16>& registers) {
             {
                 ImGui::TableNextRow();
                 ImGui::TableSetColumnIndex(0);
-                ImGui::Text("V[%d]", row);
+                ImGui::Text("V[%X]", row);
             
-                // ImGui::Text("Dec: %d|Hex: %X", registers.at(row), registers.at(row));
                 ImGui::TableSetColumnIndex(1);
                 ImGui::PushID(row);
                 
-                int value = registers.at(row); // promote to int so InputInt works
+                int value = registers.at(row);
                 if (ImGui::InputScalar("##reg", ImGuiDataType_U8, &value,
                        nullptr, nullptr, "%02X",
                        ImGuiInputTextFlags_CharsHexadecimal)) {
@@ -55,7 +53,7 @@ void Debugger::showTimers(uint16_t& PC, uint16_t& I, uint8_t& delay_timer, uint8
     ImVec2 outer_size = ImVec2(0.0f, ImGui::GetTextLineHeightWithSpacing() * 4);
     if (ImGui::BeginTable("Registers", 2, flags, outer_size))
     {
-        ImGui::TableSetupScrollFreeze(0, 1); // Make top row always visible
+        ImGui::TableSetupScrollFreeze(0, 1);
         ImGui::TableSetupColumn("Register", ImGuiTableColumnFlags_None);
         ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_None);
         ImGui::TableHeadersRow();
@@ -159,12 +157,12 @@ void Debugger::showProgramCounter(uint16_t& PC, const std::array<uint8_t, 4096>&
         
         ImGui::TableSetColumnIndex(0);
         if (ImGui::Button("Run")) {
-            chip8.is_paused = false; // Toggle pause state
+            chip8.is_paused = false;
         }
 
         ImGui::TableSetColumnIndex(1);
         if (ImGui::Button("Pause")) {
-            chip8.is_paused = true; // Toggle pause state
+            chip8.is_paused = true;
         } 
 
         ImGui::TableSetColumnIndex(2);
@@ -253,7 +251,7 @@ void Debugger::showKeypad(std::array<bool, 16>& keypad) {
 
             bool pressed = keypad[key];
             char label[3];
-            snprintf(label, sizeof(label), "%X", key); // show as hex (0–F)
+            snprintf(label, sizeof(label), "%X", key);
 
             if (ImGui::Selectable(label, pressed, ImGuiSelectableFlags_None, ImVec2(40, 40))) {
                 keypad[key] = !pressed;
@@ -282,7 +280,7 @@ void Debugger::showDisassembly(const uint16_t& PC, const std::array<uint8_t, 409
     static ImGuiTableFlags flags = ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV | ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable;
     ImGui::BeginChild("DisassemblyContent", ImVec2(0, 0), true);
     if (ImGui::BeginTable("DissasemblyTable", 3, flags)) {
-        ImGui::TableSetupScrollFreeze(0, 1); // Make top row always visible
+        ImGui::TableSetupScrollFreeze(0, 1);
         ImGui::TableSetupColumn("Address", ImGuiTableColumnFlags_None);
         ImGui::TableSetupColumn("Hex", ImGuiTableColumnFlags_None);
         ImGui::TableSetupColumn("Instruction", ImGuiTableColumnFlags_None);

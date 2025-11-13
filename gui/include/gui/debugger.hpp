@@ -20,6 +20,7 @@ public:
     void showStack(std::vector<uint16_t>& stack);
     void showKeypad(std::array<bool, 16>& keypad);
     void showDisassembly(const uint16_t& PC, const std::array<uint8_t, 4096>& RAM, long rom_size);
+    
 private:
     std::string disassemble(uint16_t opcode);
 
@@ -28,7 +29,7 @@ private:
         ImGui::TableSetColumnIndex(1);
         ImGui::PushID(id);
         
-        int st = value; // promote to int so InputInt works
+        int st = value;
         if (ImGui::InputScalar("##reg", ImGuiDataType_U8, &st,
                 nullptr, nullptr, "%02X",
                 ImGuiInputTextFlags_CharsHexadecimal)) {
@@ -61,7 +62,6 @@ private:
                     ImGui::TableSetColumnIndex(0);
                     ImGui::Text("%s[%d]", first_column_name, row);
                 
-                    // ImGui::Text("Dec: %d|Hex: %X", registers.at(row), registers.at(row));
                     ImGui::TableSetColumnIndex(1);
                     ImGui::PushID(row);
                     

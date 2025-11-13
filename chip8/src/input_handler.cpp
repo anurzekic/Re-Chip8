@@ -26,7 +26,7 @@ void InputHandler::handleInput(const SDL_Event& event, Chip8& chip8) {
             chip8.is_running = false;
             break;
         case SDL_SCANCODE_SPACE:
-            chip8.is_paused = !chip8.is_paused; // Toggle pause state
+            chip8.is_paused = !chip8.is_paused;
             break;
         default:
             if (checkValidKeyPressed(key))
