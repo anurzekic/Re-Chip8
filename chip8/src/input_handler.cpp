@@ -38,6 +38,9 @@ void InputHandler::handleInput(const SDL_Event& event, Chip8& chip8) {
         if (checkValidKeyPressed(key))
             chip8.keypad[key_bindings[key]] = 0;
         break;
+    case SDL_EVENT_QUIT:
+        chip8.is_running = false;
+        break;
     default:
         break;
     }

@@ -19,7 +19,7 @@ option(CHIP8_VENDORED "Use vendored libraries" OFF)
 if(CHIP8_VENDORED)
     add_subdirectory(vendored/SDL EXCLUDE_FROM_ALL)
 else()
-    find_package(SDL3 REQUIRED CONFIG REQUIRED COMPONENTS SDL3-shared)
+    find_package(SDL3 CONFIG REQUIRED)
 endif()
 
 target_include_directories(
@@ -31,7 +31,8 @@ target_include_directories(
 
 target_link_libraries(
     chip8 
-    PRIVATE 
+    PUBLIC
     SDL3::SDL3
-    imgui  # imgui target is available from top-level
+    PRIVATE 
+    imgui
 )

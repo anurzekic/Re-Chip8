@@ -15,6 +15,6 @@ target_include_directories(
 target_link_libraries(
     gui
     PRIVATE 
-    imgui  # imgui target is available from top-level
+    imgui
     chip8
 )

@@ -4,7 +4,7 @@
 #include <iostream>
 #include <random>
 
-Chip8::Chip8() : PC(0x200), delay_timer(0), sound_timer(0), display{}, RAM{}, keypad{}, waiting_for_key_release(false), 
+Chip8::Chip8() : PC(0x200), delay_timer(0), sound_timer(0), display{}, RAM{}, V{}, keypad{}, waiting_for_key_release(false), 
                 is_running(true), is_paused(false), rom_size(0), draw_to_screen(false), play_sound(false) {}
 
 bool Chip8::init() {

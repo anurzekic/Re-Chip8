@@ -15,3 +15,7 @@ target_include_directories(imgui PUBLIC
 )
 
 target_compile_features(imgui PUBLIC cxx_std_17)
+
+find_package(SDL3 CONFIG REQUIRED)
+
+target_link_libraries(imgui PRIVATE SDL3::SDL3)
